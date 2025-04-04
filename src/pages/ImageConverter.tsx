@@ -22,6 +22,7 @@ import {
 } from "@/services/imageService";
 import { downloadAllFiles } from "@/services/fileService";
 import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
+import { ImageDiffModal } from "@/components/ImageDiffModal";
 
 export default function ImageConverter() {
   const [files, setFiles] = useState<ImageFile[]>([]);
@@ -30,6 +31,7 @@ export default function ImageConverter() {
   const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
+  const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   useEffect(() => {
     setQuality(formatRecommendations[format].defaultQuality);
@@ -117,6 +119,10 @@ export default function ImageConverter() {
       );
     }
   }, [files, format]);
+
+  const handleViewDiff = useCallback((index: number) => {
+    setSelectedFileIndex(index);
+  }, []);
 
   return (
     <div className="container mx-auto py-8">
@@ -254,11 +260,38 @@ export default function ImageConverter() {
                         )}
                       </p>
                     )}
+                    {file.processed && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-2"
+                        onClick={() => handleViewDiff(fileIndex)}
+                      >
+                        View Diff
+                      </Button>
+                    )}
                   </div>
                 }
               />
             ))}
           </div>
+        )}
+
+        {selectedFileIndex !== null && files[selectedFileIndex] && (
+          <ImageDiffModal
+            isOpen={true}
+            onClose={() => setSelectedFileIndex(null)}
+            originalSrc={files[selectedFileIndex].preview}
+            processedSrc={
+              files[selectedFileIndex].processed
+                ? URL.createObjectURL(files[selectedFileIndex].processed)
+                : ""
+            }
+            originalWidth={files[selectedFileIndex].originalWidth || 0}
+            originalHeight={files[selectedFileIndex].originalHeight || 0}
+            newWidth={files[selectedFileIndex].newWidth || 0}
+            newHeight={files[selectedFileIndex].newHeight || 0}
+          />
         )}
       </Card>
     </div>

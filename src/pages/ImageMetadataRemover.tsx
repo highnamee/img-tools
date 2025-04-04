@@ -133,7 +133,7 @@ export default function ImageMetadataRemover() {
                         ))}
                         {file.metadata.length > 5 && (
                           <Button
-                            variant="default"
+                            variant="outline"
                             size="sm"
                             className="mt-2 text-xs"
                             onClick={() => handleShowAllMetadata(fileIndex)}
