@@ -7,6 +7,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
+import { CONVERTER_PATH, METADATA_REMOVER_PATH } from "@/constants/routes";
 
 export function Header() {
   const location = useLocation();
@@ -20,33 +21,33 @@ export function Header() {
             <NavigationMenuItem className="block md:hidden">
               <NavigationMenuTrigger className="flex items-center gap-2">
                 <span className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent">
-                  FILE CONVERTER
+                  IMG TOOLS
                 </span>
               </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <div className="flex flex-col">
-                  <Link to="/file-converter">
+                  <Link to={CONVERTER_PATH}>
                     <div
                       className={cn(
                         "hover:text-primary text-sm font-medium transition-colors",
-                        location.pathname === "/file-converter"
+                        location.pathname === CONVERTER_PATH
                           ? "text-primary"
                           : "text-muted-foreground"
                       )}
                     >
-                      Image Converter
+                      Converter
                     </div>
                   </Link>
-                  <Link to="/file-converter/metadata">
+                  <Link to={METADATA_REMOVER_PATH}>
                     <div
                       className={cn(
                         "hover:text-primary text-sm font-medium transition-colors",
-                        location.pathname === "/file-converter/metadata"
+                        location.pathname === METADATA_REMOVER_PATH
                           ? "text-primary"
                           : "text-muted-foreground"
                       )}
                     >
-                      Image Metadata Remover
+                      Metadata Remover
                     </div>
                   </Link>
                 </div>
@@ -55,10 +56,10 @@ export function Header() {
 
             {/* Visible in desktop view */}
             <NavigationMenuItem className="hidden md:flex">
-              <Link to="/file-converter">
+              <Link to={CONVERTER_PATH}>
                 <div className="flex items-center gap-2">
                   <span className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent">
-                    FILE CONVERTER
+                    IMG TOOLS
                   </span>
                 </div>
               </Link>
@@ -66,30 +67,30 @@ export function Header() {
 
             <div className="hidden items-center gap-6 md:flex">
               <NavigationMenuItem>
-                <Link to="/file-converter">
+                <Link to={CONVERTER_PATH}>
                   <div
                     className={cn(
                       "hover:text-primary text-sm font-medium transition-colors",
-                      location.pathname === "/file-converter"
+                      location.pathname === CONVERTER_PATH
                         ? "text-primary"
                         : "text-muted-foreground"
                     )}
                   >
-                    Image Converter
+                    Converter
                   </div>
                 </Link>
               </NavigationMenuItem>
               <NavigationMenuItem>
-                <Link to="/file-converter/metadata">
+                <Link to={METADATA_REMOVER_PATH}>
                   <div
                     className={cn(
                       "hover:text-primary text-sm font-medium transition-colors",
-                      location.pathname === "/file-converter/metadata"
+                      location.pathname === METADATA_REMOVER_PATH
                         ? "text-primary"
                         : "text-muted-foreground"
                     )}
                   >
-                    Image Metadata Remover
+                    Metadata Remover
                   </div>
                 </Link>
               </NavigationMenuItem>
