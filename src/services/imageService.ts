@@ -1,15 +1,15 @@
 import imageCompression, { Options } from "browser-image-compression";
 
-export type ImageFile = {
+export interface ImageFile {
   file: File;
-  preview: string;
-  converted?: Blob;
   name: string;
+  preview: string;
   originalWidth?: number;
   originalHeight?: number;
   newWidth?: number;
   newHeight?: number;
-};
+  processed?: Blob;
+}
 
 export type ConversionFormat = "png" | "jpeg" | "webp" | "avif" | "gif" | "bmp" | "tiff";
 

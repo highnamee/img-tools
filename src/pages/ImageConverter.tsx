@@ -17,10 +17,11 @@ import {
   ImageFile,
   ConversionFormat,
   convertImage,
-  downloadImage,
   formatRecommendations,
   ResizeOptions,
 } from "@/services/imageService";
+import { downloadAllFiles } from "@/services/fileService";
+import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 
 export default function ImageConverter() {
   const [files, setFiles] = useState<ImageFile[]>([]);
@@ -73,9 +74,9 @@ export default function ImageConverter() {
   const convertImages = useCallback(async () => {
     setProcessingFiles(new Set(files.map((f) => f.name)));
     try {
-      const convertedFiles = await Promise.all(
+      const processedFiles = await Promise.all(
         files.map(async (imageFile) => {
-          const convertedBlob = await convertImage(
+          const processedBlob = await convertImage(
             imageFile.file,
             format,
             quality,
@@ -84,20 +85,20 @@ export default function ImageConverter() {
 
           // Calculate new dimensions
           const img = new Image();
-          img.src = URL.createObjectURL(convertedBlob);
+          img.src = URL.createObjectURL(processedBlob);
           await new Promise((resolve) => {
             img.onload = resolve;
           });
 
           return {
             ...imageFile,
-            converted: convertedBlob,
+            processed: processedBlob,
             newWidth: img.width,
             newHeight: img.height,
           };
         })
       );
-      setFiles(convertedFiles);
+      setFiles(processedFiles);
     } catch (error) {
       console.error("Error converting images:", error);
     } finally {
@@ -105,14 +106,26 @@ export default function ImageConverter() {
     }
   }, [files, format, quality, enableResize, resizeOptions]);
 
+  const downloadAll = useCallback(() => {
+    const filesToDownload = files.filter((file) => file.processed);
+    if (filesToDownload.length > 0) {
+      downloadAllFiles(
+        filesToDownload.map((file) => ({
+          blob: file.processed!,
+          filename: `${file.name.split(".")[0]}.${format}`,
+        }))
+      );
+    }
+  }, [files, format]);
+
   return (
     <div className="container mx-auto px-4 py-8">
       <Card className="p-6">
-        <h1 className="mb-6 text-2xl font-bold">Image Converter</h1>
+        <h1 className="text-2xl font-bold">Image Converter</h1>
+
+        <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
-          <ImageDropZone onFilesAdded={handleFilesAdded} />
-
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-10">
               <div className="space-y-2">
@@ -193,7 +206,7 @@ export default function ImageConverter() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
+          <div className="flex gap-4">
             <Button
               onClick={convertImages}
               disabled={files.length === 0 || processingFiles.size > 0}
@@ -201,14 +214,8 @@ export default function ImageConverter() {
               {processingFiles.size > 0 ? "Converting..." : "Convert Images"}
             </Button>
             <Button
-              onClick={() => {
-                files.forEach((file) => {
-                  if (file.converted) {
-                    downloadImage(file.converted, file.name, format);
-                  }
-                });
-              }}
-              disabled={files.length === 0 || !files.some((f) => f.converted)}
+              onClick={downloadAll}
+              disabled={files.length === 0 || !files.some((f) => f.processed)}
               variant="outline"
             >
               Download All
@@ -221,21 +228,38 @@ export default function ImageConverter() {
               Clear All
             </Button>
           </div>
-
-          {files.length > 0 && (
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
-              {files.map((file) => (
-                <ImagePreview
-                  key={file.name + file.preview}
-                  file={file}
-                  format={format}
-                  onRemove={() => handleRemoveFile(files.indexOf(file))}
-                  isProcessing={processingFiles.has(file.name)}
-                />
-              ))}
-            </div>
-          )}
         </div>
+
+        {files.length > 0 && (
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+            {files.map((file, fileIndex) => (
+              <ImagePreview
+                key={file.name + file.preview}
+                file={file}
+                format={format}
+                onRemove={() => handleRemoveFile(fileIndex)}
+                isProcessing={processingFiles.has(file.name)}
+                extraData={
+                  <div className="space-y-0.5">
+                    <p className="text-muted-foreground text-xs">
+                      {file.processed
+                        ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.processed.size)}`
+                        : formatFileSize(file.file.size)}
+                    </p>
+                    {file.originalWidth && file.originalHeight && (
+                      <p className="text-muted-foreground text-xs">
+                        <span>{formatDimensions(file.originalWidth, file.originalHeight)} </span>
+                        {file.newWidth && file.newHeight && (
+                          <span> → {formatDimensions(file.newWidth, file.newHeight)}</span>
+                        )}
+                      </p>
+                    )}
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        )}
       </Card>
     </div>
   );

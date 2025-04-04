@@ -2,12 +2,14 @@ import { ImageFile, ConversionFormat, downloadImage } from "@/services/imageServ
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
+import { ReactNode } from "react";
 
 interface ImagePreviewProps {
   readonly file: ImageFile;
   readonly format: ConversionFormat;
   readonly onRemove: () => void;
   readonly isProcessing?: boolean;
+  readonly extraData?: ReactNode;
 }
 
 export function ImagePreview({
@@ -15,26 +17,16 @@ export function ImagePreview({
   format,
   onRemove,
   isProcessing,
+  extraData,
 }: Readonly<ImagePreviewProps>) {
   const handleDownload = () => {
-    if (file.converted) {
-      downloadImage(file.converted, file.name, format);
+    if (file.processed) {
+      downloadImage(file.processed, file.name, format);
     }
   };
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes < 1024) return bytes + " B";
-    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + " KB";
-    return (bytes / 1048576).toFixed(1) + " MB";
-  };
-
-  const formatDimensions = (width?: number, height?: number) => {
-    if (!width || !height) return "";
-    return `${width}×${height}`;
-  };
-
   return (
-    <Card className="relative overflow-hidden">
+    <Card className="relative gap-4 overflow-hidden pt-0 pb-4">
       <div className="group relative aspect-square">
         <img src={file.preview} alt={file.name} className="h-full w-full object-contain" />
         {isProcessing && (
@@ -48,7 +40,7 @@ export function ImagePreview({
               variant="secondary"
               size="sm"
               onClick={handleDownload}
-              disabled={!file.converted}
+              disabled={!file.processed}
             >
               Download
             </Button>
@@ -58,25 +50,14 @@ export function ImagePreview({
           </div>
         )}
       </div>
-      <div className="p-2">
+      <div className="space-y-1 p-2">
         <p className="truncate text-sm font-medium">
-          {file.converted ? `${file.name.split(".")[0]}.${format}` : file.name}
+          {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
         </p>
         <p className="text-muted-foreground text-xs">
-          {isProcessing ? "Processing..." : file.converted ? "Converted" : "Ready to convert"}
+          {isProcessing ? "Processing..." : file.processed ? "Processed" : "Ready to process"}
         </p>
-        <p className="text-muted-foreground text-xs">
-          {file.converted
-            ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.converted.size)}`
-            : formatFileSize(file.file.size)}
-        </p>
-        {file.originalWidth && file.originalHeight && (
-          <p className="text-muted-foreground text-xs">
-            {file.newWidth && file.newHeight
-              ? `${formatDimensions(file.originalWidth, file.originalHeight)} → ${formatDimensions(file.newWidth, file.newHeight)}`
-              : formatDimensions(file.originalWidth, file.originalHeight)}
-          </p>
-        )}
+        {extraData}
       </div>
     </Card>
   );
