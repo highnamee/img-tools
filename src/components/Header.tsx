@@ -7,7 +7,7 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { CONVERTER_PATH, METADATA_REMOVER_PATH } from "@/constants/routes";
+import { HOME_PATH, CONVERTER_PATH, METADATA_REMOVER_PATH } from "@/constants/routes";
 
 export function Header() {
   const location = useLocation();
@@ -20,16 +20,19 @@ export function Header() {
             {/* Trigger for mobile view */}
             <NavigationMenuItem className="block md:hidden">
               <NavigationMenuTrigger className="flex items-center gap-2">
-                <span className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent">
+                <Link
+                  to={HOME_PATH}
+                  className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
+                >
                   IMG TOOLS
-                </span>
+                </Link>
               </NavigationMenuTrigger>
               <NavigationMenuContent>
                 <div className="flex flex-col">
                   <Link to={CONVERTER_PATH}>
                     <div
                       className={cn(
-                        "hover:text-primary text-sm font-medium transition-colors",
+                        "hover:text-primary p-2 text-sm font-medium transition-colors",
                         location.pathname === CONVERTER_PATH
                           ? "text-primary"
                           : "text-muted-foreground"
@@ -41,7 +44,7 @@ export function Header() {
                   <Link to={METADATA_REMOVER_PATH}>
                     <div
                       className={cn(
-                        "hover:text-primary text-sm font-medium transition-colors",
+                        "hover:text-primary p-2 text-sm font-medium transition-colors",
                         location.pathname === METADATA_REMOVER_PATH
                           ? "text-primary"
                           : "text-muted-foreground"
@@ -58,9 +61,12 @@ export function Header() {
             <NavigationMenuItem className="hidden md:flex">
               <Link to={CONVERTER_PATH}>
                 <div className="flex items-center gap-2">
-                  <span className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent">
+                  <Link
+                    to={HOME_PATH}
+                    className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
+                  >
                     IMG TOOLS
-                  </span>
+                  </Link>
                 </div>
               </Link>
             </NavigationMenuItem>
