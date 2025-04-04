@@ -52,5 +52,6 @@
     "vite": "^6.2.0"
   },
   "main": "index.js",
-  "license": "MIT"
+  "license": "MIT",
+  "packageManager": "yarn@4.8.1"
 }
