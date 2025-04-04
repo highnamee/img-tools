@@ -13,20 +13,37 @@ const formatMetadataValue = (value: unknown): string => {
   return String(value);
 };
 
-export async function extractMetadata(file: File): Promise<MetadataField[]> {
+export async function extractMetadata(file: File): Promise<{
+  metadata: MetadataField[];
+  coordinates?: { lat: number; lng: number };
+}> {
   try {
     const metadata = await parse(file);
-    if (!metadata) return [];
+    if (!metadata) return { metadata: [] };
 
-    return Object.entries(metadata)
+    // Extract GPS coordinates if available
+    let coordinates;
+    if (metadata.latitude && metadata.longitude) {
+      coordinates = {
+        lat: metadata.latitude,
+        lng: metadata.longitude,
+      };
+    }
+
+    const metadataFields = Object.entries(metadata)
       .filter(([key]) => !key.startsWith("_"))
       .map(([name, value]) => ({
         name,
         value: formatMetadataValue(value),
       }));
+
+    return {
+      metadata: metadataFields,
+      coordinates,
+    };
   } catch (error) {
     console.error("Error extracting metadata:", error);
-    return [];
+    return { metadata: [] };
   }
 }
 

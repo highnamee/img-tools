@@ -11,6 +11,7 @@ import { extractImageFormat } from "@/utils/imageUtils";
 
 interface ImageWithMetadata extends ImageFile {
   metadata?: MetadataField[];
+  coordinates?: { lat: number; lng: number };
 }
 
 export default function ImageMetadataRemover() {
@@ -21,11 +22,12 @@ export default function ImageMetadataRemover() {
   const handleFilesAdded = useCallback(async (newFiles: ImageFile[]) => {
     const filesWithMetadata = await Promise.all(
       newFiles.map(async (file) => {
-        const metadata = await extractMetadata(file.file);
+        const { metadata, coordinates } = await extractMetadata(file.file);
 
         return {
           ...file,
           metadata,
+          coordinates,
         };
       })
     );
@@ -81,6 +83,11 @@ export default function ImageMetadataRemover() {
     downloadAllFiles(filesToDownload);
   }, [files]);
 
+  const openInGoogleMaps = useCallback((coordinates: { lat: number; lng: number }) => {
+    const url = `https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}`;
+    window.open(url, "_blank");
+  }, []);
+
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
@@ -131,16 +138,28 @@ export default function ImageMetadataRemover() {
                             <span className="text-muted-foreground ml-2">{field.value}</span>
                           </div>
                         ))}
-                        {file.metadata.length > 5 && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="mt-2 text-xs"
-                            onClick={() => handleShowAllMetadata(fileIndex)}
-                          >
-                            Show all ({file.metadata.length})
-                          </Button>
-                        )}
+                        <div className="flex gap-2">
+                          {file.coordinates && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-2 text-xs"
+                              onClick={() => openInGoogleMaps(file.coordinates!)}
+                            >
+                              View on Map 🗺️
+                            </Button>
+                          )}
+                          {file.metadata.length > 5 && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="mt-2 text-xs"
+                              onClick={() => handleShowAllMetadata(fileIndex)}
+                            >
+                              Show all ({file.metadata.length})
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     ) : undefined
                   }
