@@ -5,10 +5,19 @@
     <link rel="icon" type="image/png" href="/img-tools/logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>File converter</title>
-    <script type="module" crossorigin src="/img-tools/assets/index-CdyoSTkJ.js"></script>
-    <link rel="stylesheet" crossorigin href="/img-tools/assets/index-5OARxCyD.css">
+    <script type="module" crossorigin src="/img-tools/assets/main-D1cxRa7A.js"></script>
+    <link rel="stylesheet" crossorigin href="/img-tools/assets/main-5OARxCyD.css">
   </head>
   <body>
     <div id="root"></div>
+    <script>
+      (() => {
+        const redirect = sessionStorage.redirect;
+        delete sessionStorage.redirect;
+        if (redirect && redirect !== location.href) {
+          history.replaceState(null, null, redirect);
+        }
+      })();
+    </script>
   </body>
 </html>
