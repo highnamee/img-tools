@@ -82,7 +82,7 @@ export default function ImageMetadataRemover() {
   }, [files]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto py-8">
       <Card className="p-6">
         <h1 className="text-2xl font-bold">Image Metadata Remover</h1>
 

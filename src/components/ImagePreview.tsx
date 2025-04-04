@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { ReactNode } from "react";
+import { Badge } from "@/components/ui/badge";
 
 interface ImagePreviewProps {
   readonly file: ImageFile;
@@ -24,6 +25,16 @@ export function ImagePreview({
       downloadImage(file.processed, file.name, format);
     }
   };
+
+  let badgeColor = "bg-gray-500";
+  let badgeText = "Ready";
+  if (isProcessing) {
+    badgeColor = "bg-yellow-500";
+    badgeText = "Processing";
+  } else if (file.processed) {
+    badgeColor = "bg-green-500";
+    badgeText = "Processed";
+  }
 
   return (
     <Card className="relative gap-4 overflow-hidden pt-0 pb-4">
@@ -50,13 +61,11 @@ export function ImagePreview({
           </div>
         )}
       </div>
-      <div className="space-y-1 p-2">
+      <div className="space-y-2 p-2">
         <p className="truncate text-sm font-medium">
           {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
         </p>
-        <p className="text-muted-foreground text-xs">
-          {isProcessing ? "Processing..." : file.processed ? "Processed" : "Ready to process"}
-        </p>
+        <Badge className={badgeColor}>{badgeText}</Badge>
         {extraData}
       </div>
     </Card>

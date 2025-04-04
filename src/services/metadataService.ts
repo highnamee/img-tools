@@ -4,7 +4,6 @@ import { ImageFile } from "./imageService";
 export interface MetadataField {
   name: string;
   value: string;
-  keep: boolean;
 }
 
 const formatMetadataValue = (value: unknown): string => {
@@ -24,7 +23,6 @@ export async function extractMetadata(file: File): Promise<MetadataField[]> {
       .map(([name, value]) => ({
         name,
         value: formatMetadataValue(value),
-        keep: true,
       }));
   } catch (error) {
     console.error("Error extracting metadata:", error);

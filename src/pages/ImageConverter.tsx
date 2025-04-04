@@ -119,7 +119,7 @@ export default function ImageConverter() {
   }, [files, format]);
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto py-8">
       <Card className="p-6">
         <h1 className="text-2xl font-bold">Image Converter</h1>
 
@@ -206,7 +206,7 @@ export default function ImageConverter() {
             </p>
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-wrap gap-4">
             <Button
               onClick={convertImages}
               disabled={files.length === 0 || processingFiles.size > 0}
