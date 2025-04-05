@@ -11,7 +11,7 @@ export interface ImageFile {
   processed?: Blob;
 }
 
-export type ConversionFormat = "png" | "jpeg" | "webp" | "avif" | "gif" | "bmp" | "tiff";
+export type ConversionFormat = "png" | "jpeg" | "webp" | "avif" | "bmp" | "tiff";
 
 export type ResizeOptions = {
   width: number;
@@ -26,7 +26,6 @@ export const formatRecommendations: Record<
   jpeg: { defaultQuality: 85, description: "Best for photos and complex images" },
   webp: { defaultQuality: 80, description: "Modern format with good compression" },
   avif: { defaultQuality: 75, description: "Advanced format with excellent compression" },
-  gif: { defaultQuality: 90, description: "For simple animations and graphics" },
   bmp: { defaultQuality: 100, description: "Uncompressed format, not recommended" },
   tiff: { defaultQuality: 100, description: "High quality, large file size" },
 };
