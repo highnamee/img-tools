@@ -132,6 +132,11 @@ export default function ImageConverter() {
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
+          <p className="text-muted-foreground text-xs">
+            Convert images between different formats with options to adjust quality and resize
+            dimensions
+          </p>
+
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-10">
               <div className="space-y-2">
@@ -221,7 +226,7 @@ export default function ImageConverter() {
             </Button>
             <Button
               onClick={downloadAll}
-              disabled={files.length === 0 || !files.some((f) => f.processed)}
+              disabled={!files.some((f) => f.processed)}
               variant="outline"
             >
               Download All

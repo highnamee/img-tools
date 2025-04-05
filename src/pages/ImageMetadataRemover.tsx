@@ -95,7 +95,12 @@ export default function ImageMetadataRemover() {
 
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
-        {files.length > 0 && (
+        <div className="space-y-6">
+          <p className="text-muted-foreground text-xs">
+            View and remove metadata from your images including GPS coordinates, camera information,
+            and other sensitive data
+          </p>
+
           <div className="flex flex-wrap gap-4">
             <Button
               onClick={processImages}
@@ -105,7 +110,7 @@ export default function ImageMetadataRemover() {
             </Button>
             <Button
               onClick={downloadAll}
-              disabled={files.length === 0 || !files.some((f) => f.processed)}
+              disabled={!files.some((f) => f.processed)}
               variant="outline"
             >
               Download All
@@ -118,7 +123,7 @@ export default function ImageMetadataRemover() {
               Clear All
             </Button>
           </div>
-        )}
+        </div>
 
         {files.length > 0 && (
           <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">

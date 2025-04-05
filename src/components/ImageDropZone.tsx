@@ -57,7 +57,10 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
         className="hidden"
         id="file-upload"
       />
-      <label htmlFor="file-upload" className="flex cursor-pointer flex-col items-center gap-2">
+      <label
+        htmlFor="file-upload"
+        className="flex h-full w-full cursor-pointer flex-col items-center justify-center gap-2"
+      >
         <div className="bg-primary/10 rounded-full p-3">
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -79,9 +82,7 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
         <p className="text-muted-foreground text-sm font-medium">
           Drag and drop images here, or click to select files
         </p>
-        <p className="text-muted-foreground text-xs">
-          Supports PNG, JPEG, WebP, AVIF, GIF, BMP, TIFF
-        </p>
+        <p className="text-muted-foreground text-xs">Supports PNG, JPEG, WebP, AVIF, BMP, TIFF</p>
       </label>
     </div>
   );

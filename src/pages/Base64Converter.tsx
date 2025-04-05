@@ -69,12 +69,10 @@ export default function Base64Converter() {
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
-          <div className="flex flex-col gap-4">
-            <p className="text-muted-foreground text-xs">
-              Convert images to base64 encoded strings that can be used in HTML img tags or CSS
-              backgrounds
-            </p>
-          </div>
+          <p className="text-muted-foreground text-xs">
+            Convert images to base64 encoded strings that can be used in HTML img tags or CSS
+            backgrounds
+          </p>
 
           <div className="flex flex-wrap gap-4">
             <Button
