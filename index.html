@@ -24,7 +24,7 @@
       content="Use IMG TOOLS to convert, compress, and edit images effortlessly and privately. No uploads or tracking involved."
     />
     <meta property="og:image" content="/logo.png" />
-    <meta property="og:url" content="https://tools.namvo.net/" />
+    <meta property="og:url" content="https://img-tools.namvo.net/" />
     <meta property="og:type" content="website" />
 
     <!-- Twitter Card Meta Tags -->
@@ -35,21 +35,6 @@
       content="Use IMG TOOLS to convert, compress, and edit images effortlessly and privately. No uploads or tracking involved."
     />
     <meta name="twitter:image" content="/logo.png" />
-
-    <script type="text/javascript">
-      (function (l) {
-        if (l.search[1] === "/") {
-          const decoded = l.search
-            .slice(1)
-            .split("&")
-            .map(function (s) {
-              return s.replace(/~and~/g, "&");
-            })
-            .join("?");
-          window.history.replaceState(null, null, l.pathname.slice(0, -1) + decoded + l.hash);
-        }
-      })(window.location);
-    </script>
   </head>
   <body>
     <div id="root"></div>
