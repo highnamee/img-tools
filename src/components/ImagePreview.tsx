@@ -11,6 +11,7 @@ interface ImagePreviewProps {
   readonly onRemove: () => void;
   readonly isProcessing?: boolean;
   readonly extraData?: ReactNode;
+  readonly hideDownload?: boolean;
 }
 
 export function ImagePreview({
@@ -19,6 +20,7 @@ export function ImagePreview({
   onRemove,
   isProcessing,
   extraData,
+  hideDownload,
 }: Readonly<ImagePreviewProps>) {
   const handleDownload = () => {
     if (file.processed) {
@@ -51,14 +53,11 @@ export function ImagePreview({
         )}
         {!isProcessing && (
           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-            <Button
-              variant="secondary"
-              size="sm"
-              onClick={handleDownload}
-              disabled={!file.processed}
-            >
-              Download
-            </Button>
+            {!hideDownload && (
+              <Button variant="secondary" size="sm" onClick={handleDownload}>
+                Download
+              </Button>
+            )}
             <Button variant="destructive" size="sm" onClick={onRemove}>
               Remove
             </Button>

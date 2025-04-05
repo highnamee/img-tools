@@ -7,7 +7,12 @@ import {
   NavigationMenuList,
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
-import { HOME_PATH, CONVERTER_PATH, METADATA_REMOVER_PATH } from "@/constants/routes";
+import {
+  HOME_PATH,
+  CONVERTER_PATH,
+  METADATA_REMOVER_PATH,
+  BASE64_CONVERTER_PATH,
+} from "@/constants/routes";
 
 export function Header() {
   const location = useLocation();
@@ -51,6 +56,18 @@ export function Header() {
                       )}
                     >
                       Metadata Remover
+                    </div>
+                  </Link>
+                  <Link to={BASE64_CONVERTER_PATH}>
+                    <div
+                      className={cn(
+                        "hover:text-primary text-md p-2 font-medium transition-colors",
+                        location.pathname === BASE64_CONVERTER_PATH
+                          ? "text-primary"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      Base64 Converter
                     </div>
                   </Link>
                 </div>
@@ -97,6 +114,20 @@ export function Header() {
                     )}
                   >
                     Metadata Remover
+                  </div>
+                </Link>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <Link to={BASE64_CONVERTER_PATH}>
+                  <div
+                    className={cn(
+                      "hover:text-primary text-md font-medium transition-colors",
+                      location.pathname === BASE64_CONVERTER_PATH
+                        ? "text-primary"
+                        : "text-muted-foreground"
+                    )}
+                  >
+                    Base64 Converter
                   </div>
                 </Link>
               </NavigationMenuItem>
