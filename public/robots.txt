@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://img-tools.namvo.net/sitemap.xml
