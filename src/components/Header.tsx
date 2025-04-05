@@ -32,7 +32,7 @@ export function Header() {
                   <Link to={CONVERTER_PATH}>
                     <div
                       className={cn(
-                        "hover:text-primary p-2 text-sm font-medium transition-colors",
+                        "hover:text-primary text-md p-2 font-medium transition-colors",
                         location.pathname === CONVERTER_PATH
                           ? "text-primary"
                           : "text-muted-foreground"
@@ -44,7 +44,7 @@ export function Header() {
                   <Link to={METADATA_REMOVER_PATH}>
                     <div
                       className={cn(
-                        "hover:text-primary p-2 text-sm font-medium transition-colors",
+                        "hover:text-primary text-md p-2 font-medium transition-colors",
                         location.pathname === METADATA_REMOVER_PATH
                           ? "text-primary"
                           : "text-muted-foreground"
@@ -76,7 +76,7 @@ export function Header() {
                 <Link to={CONVERTER_PATH}>
                   <div
                     className={cn(
-                      "hover:text-primary text-sm font-medium transition-colors",
+                      "hover:text-primary text-md font-medium transition-colors",
                       location.pathname === CONVERTER_PATH
                         ? "text-primary"
                         : "text-muted-foreground"
@@ -90,7 +90,7 @@ export function Header() {
                 <Link to={METADATA_REMOVER_PATH}>
                   <div
                     className={cn(
-                      "hover:text-primary text-sm font-medium transition-colors",
+                      "hover:text-primary text-md font-medium transition-colors",
                       location.pathname === METADATA_REMOVER_PATH
                         ? "text-primary"
                         : "text-muted-foreground"
