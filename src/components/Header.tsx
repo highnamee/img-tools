@@ -18,7 +18,7 @@ export function Header() {
   return (
     <header className="border-b">
       <div className="container mx-auto px-4 py-4">
-        <NavigationMenu>
+        <NavigationMenu className="min-w-full">
           <NavigationMenuList className="flex items-center gap-20">
             {/* Trigger for mobile view */}
             <NavigationMenuItem className="block md:hidden">
@@ -120,6 +120,15 @@ export function Header() {
               </NavigationMenuItem>
             </div>
           </NavigationMenuList>
+
+          <a
+            href="https://github.com/highnamee/img-tools"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="hover:text-primary text-md text-muted-foreground ml-auto flex items-center font-medium transition-colors"
+          >
+            <img src="/github.svg" alt="GitHub" className="w-8" />
+          </a>
         </NavigationMenu>
       </div>
     </header>
