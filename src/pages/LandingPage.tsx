@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { CONVERTER_PATH, METADATA_REMOVER_PATH } from "@/constants/routes";
+import { CONVERTER_PATH, METADATA_REMOVER_PATH, BASE64_CONVERTER_PATH } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
 
 export default function LandingPage() {
@@ -17,27 +17,38 @@ export default function LandingPage() {
           <div>No uploads, no tracking—just pure, private image editing.</div>
         </h2>
       </header>
-      <div className="grid grid-cols-1 gap-10 md:grid-cols-2">
-        <div className="rounded-lg bg-white p-6 shadow-lg">
+      <div className="flex flex-wrap justify-center gap-10">
+        <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
           <h3 className="mb-4 text-2xl font-bold">Image Converter</h3>
           <ul className="list-disc space-y-2 pl-5">
             <li>Seamlessly convert between formats: PNG, JPEG, WEBP, AVIF, BMP, TIFF</li>
-            <li>Compress and resize your images with ease</li>
+            <li>Compress and resize your images</li>
             <li>Batch process multiple files without any limits</li>
           </ul>
           <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={CONVERTER_PATH}>Give the Converter a Try</Link>
+            <Link to={CONVERTER_PATH}>Try Converter</Link>
           </Button>
         </div>
-        <div className="rounded-lg bg-white p-6 shadow-lg">
+        <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
           <h3 className="mb-4 text-2xl font-bold">Metadata Remover</h3>
           <ul className="list-disc space-y-2 pl-5">
             <li>Unveil image metadata including GPS, Camera, Date taken, ...</li>
             <li>Erase metadata instantly</li>
             <li>Check file location on Google Maps, if available</li>
           </ul>
-          <Button variant="outline" size="lg" className="mt-6 shadow-lg">
-            <Link to={METADATA_REMOVER_PATH}>Try Metadata Remover Now</Link>
+          <Button variant="default" size="lg" className="mt-6 shadow-lg">
+            <Link to={METADATA_REMOVER_PATH}>Try Metadata Remover</Link>
+          </Button>
+        </div>
+        <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
+          <h3 className="mb-4 text-2xl font-bold">Base64 Converter</h3>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>Convert images in different formats to base64 encoded strings</li>
+            <li>Generate HTML img tags with base64 data</li>
+            <li>Perfect for embedding small icons directly in your code</li>
+          </ul>
+          <Button variant="default" size="lg" className="mt-6 shadow-lg">
+            <Link to={BASE64_CONVERTER_PATH}>Try Base64 Converter</Link>
           </Button>
         </div>
       </div>
