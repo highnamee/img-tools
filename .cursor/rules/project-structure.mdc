@@ -1,0 +1,60 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+
+# Project Structure - img-tools
+
+## Overview
+This is a React application built with TypeScript that provides image manipulation tools including conversion between formats and metadata removal.
+
+## Core Structure
+- `/src` - Main source code directory
+  - `App.tsx` - Main application component with routing configuration
+  - `main.tsx` - Application entry point
+  - `index.css` - Global styles
+
+## Key Directories
+
+### Components
+- `/components` - Reusable UI components
+  - `Header.tsx` - Application header/navigation
+  - `Footer.tsx` - Page footer
+  - `ImageDropZone.tsx` - Drag and drop interface for images
+  - `ImagePreview.tsx` - Image preview display
+  - `ImageDiffModal.tsx` - Modal for comparing images
+  - `ImageMetadataModal.tsx` - Modal for viewing image metadata
+  - `/ui` - Basic UI components (Shadcn/UI style)
+    - UI primitives like buttons, inputs, modals, etc.
+
+### Pages
+- `/pages` - Application page components
+  - `LandingPage.tsx` - Home page
+  - `ImageConverter.tsx` - Image format conversion tool
+  - `ImageMetadataRemover.tsx` - Tool for removing metadata from images
+
+### Services
+- `/services` - Business logic and external interactions
+  - `imageService.ts` - Image processing logic (conversion, resize)
+  - `metadataService.ts` - Metadata extraction and removal
+  - `fileService.ts` - File handling utilities
+
+### Utils & Constants
+- `/utils` - Utility functions
+  - `formatUtils.ts` - Format-related helper functions
+  - `imageUtils.ts` - Image processing helpers
+- `/constants` - Application constants
+  - `routes.ts` - URL route definitions
+
+### Assets
+- `/assets` - Static assets like images
+  - `react.svg` - React logo
+
+## Tech Stack
+- React
+- React Router
+- TypeScript
+- TailwindCSS v4
+- Shadcn: For component that does not exist in ui folder, please install it first using `npx shadcn@latest add <component_name>`
+
