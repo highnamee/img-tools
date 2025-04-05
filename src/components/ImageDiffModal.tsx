@@ -38,7 +38,7 @@ export function ImageDiffModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="w-[90vw] sm:max-w-[1000px]">
+      <DialogContent className="w-[90vw] sm:max-w-[1280px]">
         <DialogHeader>
           <DialogTitle>Image Comparison</DialogTitle>
         </DialogHeader>
@@ -91,7 +91,7 @@ export function ImageDiffModal({
                 <h3 className="font-medium">
                   Original ({originalWidth}×{originalHeight})
                 </h3>
-                <div className="w-[85vw] overflow-auto sm:max-w-[960px]">
+                <div className="w-[85vw] overflow-auto sm:max-w-[1200px]">
                   <img
                     src={originalSrc}
                     alt="Original"
@@ -105,7 +105,7 @@ export function ImageDiffModal({
                 <h3 className="font-medium">
                   Processed ({newWidth}×{newHeight})
                 </h3>
-                <div className="w-[85vw] overflow-auto sm:max-w-[960px]">
+                <div className="w-[85vw] overflow-auto sm:max-w-[1200px]">
                   <img
                     src={processedSrc}
                     alt="Processed"
