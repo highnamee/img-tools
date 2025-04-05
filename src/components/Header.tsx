@@ -26,6 +26,7 @@ export function Header() {
                 <Link
                   to={HOME_PATH}
                   className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
+                  viewTransition
                 >
                   IMG TOOLS
                 </Link>
@@ -40,6 +41,7 @@ export function Header() {
                         isActive ? "text-primary" : "text-muted-foreground"
                       )
                     }
+                    viewTransition
                   >
                     Converter
                   </NavLink>
@@ -51,6 +53,7 @@ export function Header() {
                         isActive ? "text-primary" : "text-muted-foreground"
                       )
                     }
+                    viewTransition
                   >
                     Metadata Remover
                   </NavLink>
@@ -62,6 +65,7 @@ export function Header() {
                         isActive ? "text-primary" : "text-muted-foreground"
                       )
                     }
+                    viewTransition
                   >
                     Base64 Converter
                   </NavLink>
@@ -88,6 +92,7 @@ export function Header() {
                       isActive ? "text-primary" : "text-muted-foreground"
                     )
                   }
+                  viewTransition
                 >
                   Converter
                 </NavLink>
@@ -101,6 +106,7 @@ export function Header() {
                       isActive ? "text-primary" : "text-muted-foreground"
                     )
                   }
+                  viewTransition
                 >
                   Metadata Remover
                 </NavLink>
@@ -114,6 +120,7 @@ export function Header() {
                       isActive ? "text-primary" : "text-muted-foreground"
                     )
                   }
+                  viewTransition
                 >
                   Base64 Converter
                 </NavLink>

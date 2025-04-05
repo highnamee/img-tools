@@ -26,7 +26,9 @@ export default function LandingPage() {
             <li>Batch process multiple files without any limits</li>
           </ul>
           <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={CONVERTER_PATH}>Try Converter</Link>
+            <Link to={CONVERTER_PATH} viewTransition>
+              Try Converter
+            </Link>
           </Button>
         </div>
         <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
@@ -37,7 +39,9 @@ export default function LandingPage() {
             <li>Check file location on Google Maps, if available</li>
           </ul>
           <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={METADATA_REMOVER_PATH}>Try Metadata Remover</Link>
+            <Link to={METADATA_REMOVER_PATH} viewTransition>
+              Try Metadata Remover
+            </Link>
           </Button>
         </div>
         <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
@@ -48,7 +52,9 @@ export default function LandingPage() {
             <li>Perfect for embedding small icons directly in your code</li>
           </ul>
           <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={BASE64_CONVERTER_PATH}>Try Base64 Converter</Link>
+            <Link to={BASE64_CONVERTER_PATH} viewTransition>
+              Try Base64 Converter
+            </Link>
           </Button>
         </div>
       </div>

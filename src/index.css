@@ -118,3 +118,24 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer components {
+  .scrollbar-thin {
+    scrollbar-width: thin; /* For Firefox */
+    scrollbar-color: #6b7280 transparent; /* For Firefox */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 8px; /* Width of the scrollbar for WebKit browsers */
+    height: 8px; /* Height of the scrollbar for WebKit browsers */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background-color: #6b7280; /* Color of the scrollbar thumb */
+    border-radius: 10px; /* Roundness of the scrollbar thumb */
+  }
+
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent; /* Background of the scrollbar track */
+  }
+}
