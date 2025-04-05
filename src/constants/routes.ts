@@ -1,4 +1,4 @@
-export const BASE_PATH = "/img-tools";
+export const BASE_PATH = "";
 
 export const HOME_PATH = "/";
 
