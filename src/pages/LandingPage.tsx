@@ -1,5 +1,10 @@
 import { Link } from "react-router-dom";
-import { CONVERTER_PATH, METADATA_REMOVER_PATH, BASE64_CONVERTER_PATH } from "@/constants/routes";
+import {
+  CONVERTER_PATH,
+  METADATA_REMOVER_PATH,
+  BASE64_CONVERTER_PATH,
+  BACKGROUND_REMOVER_PATH,
+} from "@/constants/routes";
 import { Button } from "@/components/ui/button";
 
 export default function LandingPage() {
@@ -18,7 +23,7 @@ export default function LandingPage() {
         </h2>
       </header>
       <div className="flex flex-wrap justify-center gap-10">
-        <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
+        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
           <h3 className="mb-4 text-2xl font-bold">Image Converter</h3>
           <ul className="list-disc space-y-2 pl-5">
             <li>Seamlessly convert between formats: PNG, JPEG, WEBP, AVIF, BMP, TIFF</li>
@@ -31,7 +36,7 @@ export default function LandingPage() {
             </Link>
           </Button>
         </div>
-        <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
+        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
           <h3 className="mb-4 text-2xl font-bold">Metadata Remover</h3>
           <ul className="list-disc space-y-2 pl-5">
             <li>Unveil image metadata including GPS, Camera, Date taken, ...</li>
@@ -44,7 +49,7 @@ export default function LandingPage() {
             </Link>
           </Button>
         </div>
-        <div className="w-96 max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
+        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
           <h3 className="mb-4 text-2xl font-bold">Base64 Converter</h3>
           <ul className="list-disc space-y-2 pl-5">
             <li>Convert images in different formats to base64 encoded strings</li>
@@ -54,6 +59,19 @@ export default function LandingPage() {
           <Button variant="default" size="lg" className="mt-6 shadow-lg">
             <Link to={BASE64_CONVERTER_PATH} viewTransition>
               Try Base64 Converter
+            </Link>
+          </Button>
+        </div>
+        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
+          <h3 className="mb-4 text-2xl font-bold">Background Remover</h3>
+          <ul className="list-disc space-y-2 pl-5">
+            <li>Remove backgrounds from batch of images with one click</li>
+            <li>All free with the best image quality</li>
+            <li>Perfect for product photos, portraits, and more</li>
+          </ul>
+          <Button variant="default" size="lg" className="mt-6 shadow-lg">
+            <Link to={BACKGROUND_REMOVER_PATH} viewTransition>
+              Try Background Remover
             </Link>
           </Button>
         </div>
