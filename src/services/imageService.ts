@@ -1,4 +1,4 @@
-import imageCompression, { Options } from "browser-image-compression";
+import { Options } from "browser-image-compression";
 
 export interface ImageFile {
   file: File;
@@ -61,6 +61,7 @@ export const convertImage = async (
   }
 
   try {
+    const imageCompression = (await import("browser-image-compression")).default;
     const compressedBlob = await imageCompression(file, options);
 
     if (compressedBlob.size > file.size) {

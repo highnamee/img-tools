@@ -1,4 +1,3 @@
-import { parse } from "exifr";
 import { ImageFile } from "./imageService";
 
 export interface MetadataField {
@@ -18,6 +17,7 @@ export async function extractMetadata(file: File): Promise<{
   coordinates?: { lat: number; lng: number };
 }> {
   try {
+    const { parse } = await import("exifr");
     const metadata = await parse(file);
     if (!metadata) return { metadata: [] };
 
