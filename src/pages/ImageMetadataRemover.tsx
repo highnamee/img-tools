@@ -16,8 +16,6 @@ interface ImageWithMetadata extends ImageFile {
 
 export default function ImageMetadataRemover() {
   const [files, setFiles] = useState<ImageWithMetadata[]>([]);
-  const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
-  const [errorFiles, setErrorFiles] = useState<Set<string>>(new Set());
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   const handleFilesAdded = useCallback(async (newFiles: ImageFile[]) => {
@@ -49,31 +47,50 @@ export default function ImageMetadataRemover() {
   }, []);
 
   const processImages = useCallback(async () => {
-    setProcessingFiles(new Set(files.map((f) => f.name)));
-    setErrorFiles(new Set());
-    try {
-      const processedFiles = await Promise.all(
-        files.map(async (file) => {
-          try {
-            const processedBlob = await removeMetadata(file.file);
-            return {
-              ...file,
-              processed: processedBlob,
-            };
-          } catch (error) {
-            console.error("Error processing image:", error);
-            setErrorFiles((prev) => new Set([...prev, file.name]));
-            return file;
-          }
-        })
-      );
+    // Mark all files as processing
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        isProcessing: true,
+        isError: false,
+      }))
+    );
 
-      setFiles(processedFiles);
-    } catch (error) {
-      console.error("Error processing images:", error);
-    } finally {
-      setProcessingFiles(new Set());
-    }
+    // Create a copy of the files array to modify
+    const processedFiles = [...files];
+
+    // Process all files in parallel but update state individually
+    const promises = files.map(async (file, index) => {
+      try {
+        const processedBlob = await removeMetadata(file.file);
+
+        // Update this single file in our copy
+        processedFiles[index] = {
+          ...file,
+          processed: processedBlob,
+          isProcessing: false,
+          isError: false,
+        };
+
+        // Update state to reflect this one file's completion
+        setFiles([...processedFiles]);
+      } catch (error) {
+        console.error("Error processing image:", error);
+
+        // Mark as error in our copy
+        processedFiles[index] = {
+          ...file,
+          isProcessing: false,
+          isError: true,
+        };
+
+        // Update state to reflect this file's error
+        setFiles([...processedFiles]);
+      }
+    });
+
+    // Wait for all processes to complete (though UI will update as each finishes)
+    await Promise.all(promises);
   }, [files]);
 
   const downloadAll = useCallback(() => {
@@ -107,9 +124,9 @@ export default function ImageMetadataRemover() {
           <div className="flex flex-wrap gap-4">
             <Button
               onClick={processImages}
-              disabled={files.length === 0 || processingFiles.size > 0}
+              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
             >
-              {processingFiles.size > 0 ? "Processing..." : "Process Images"}
+              {files.some((f) => f.isProcessing) ? "Processing..." : "Process Images"}
             </Button>
             <Button
               onClick={downloadAll}
@@ -136,8 +153,6 @@ export default function ImageMetadataRemover() {
                   file={file}
                   format={extractImageFormat(file.name)}
                   onRemove={() => handleRemoveFile(fileIndex)}
-                  isProcessing={processingFiles.has(file.name)}
-                  isError={errorFiles.has(file.name)}
                   extraData={
                     file.metadata && file.metadata.length > 0 ? (
                       <div className="space-y-1">

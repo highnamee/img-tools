@@ -9,8 +9,6 @@ interface ImagePreviewProps {
   readonly file: ImageFile;
   readonly format: ConversionFormat;
   readonly onRemove: () => void;
-  readonly isProcessing?: boolean;
-  readonly isError?: boolean;
   readonly extraData?: ReactNode;
   readonly hideDownload?: boolean;
 }
@@ -19,8 +17,6 @@ export function ImagePreview({
   file,
   format,
   onRemove,
-  isProcessing,
-  isError,
   extraData,
   hideDownload,
 }: Readonly<ImagePreviewProps>) {
@@ -33,10 +29,10 @@ export function ImagePreview({
   let badgeColor = "bg-gray-500";
   let badgeText = "Ready";
 
-  if (isError) {
+  if (file.isError) {
     badgeColor = "bg-red-500";
     badgeText = "Error";
-  } else if (isProcessing) {
+  } else if (file.isProcessing) {
     badgeColor = "bg-yellow-500";
     badgeText = "Processing";
   } else if (file.processed) {
@@ -52,14 +48,14 @@ export function ImagePreview({
           alt={file.name}
           className="h-full w-full object-contain"
         />
-        {isProcessing && (
+        {file.isProcessing && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
             <Loader2 className="h-8 w-8 animate-spin text-white" />
           </div>
         )}
-        {!isProcessing && (
+        {!file.isProcessing && (
           <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-            {!hideDownload && !isError && (
+            {!hideDownload && !file.isError && (
               <Button variant="secondary" size="sm" onClick={handleDownload}>
                 Download
               </Button>

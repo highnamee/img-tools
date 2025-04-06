@@ -19,8 +19,6 @@ type OutputFormat = "png" | "jpeg" | "webp";
 
 export default function BackgroundRemover() {
   const [files, setFiles] = useState<ImageFile[]>([]);
-  const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
-  const [errorFiles, setErrorFiles] = useState<Set<string>>(new Set());
   const [format, setFormat] = useState<OutputFormat>("png");
   const [quality, setQuality] = useState<number>(80);
   const [loadingStatus, setLoadingStatus] = useState<string>("");
@@ -51,8 +49,15 @@ export default function BackgroundRemover() {
   }, []);
 
   const processImages = useCallback(async () => {
-    setProcessingFiles(new Set(files.map((f) => f.name)));
-    setErrorFiles(new Set());
+    // Mark all files as processing
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        isProcessing: true,
+        isError: false,
+      }))
+    );
+
     setLoadingStatus("Initializing...");
 
     try {
@@ -94,32 +99,28 @@ export default function BackgroundRemover() {
             processed: processedBlob,
             newWidth: img.width,
             newHeight: img.height,
+            isProcessing: false,
+            isError: false,
           };
 
           // Update files state after each image is processed to show progress
           setFiles([...processedFiles]);
-
-          // Update processing files to remove the current file from the set
-          setProcessingFiles((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(imageFile.name);
-            return newSet;
-          });
         } catch (error) {
           console.error(`Error removing background from ${imageFile.name}:`, error);
-          setErrorFiles((prev) => new Set([...prev, imageFile.name]));
 
-          setProcessingFiles((prev) => {
-            const newSet = new Set(prev);
-            newSet.delete(imageFile.name);
-            return newSet;
-          });
+          // Mark as error
+          processedFiles[i] = {
+            ...imageFile,
+            isProcessing: false,
+            isError: true,
+          };
+
+          setFiles([...processedFiles]);
         }
       }
     } catch (error) {
       console.error("Error processing images:", error);
     } finally {
-      setProcessingFiles(new Set());
       setLoadingStatus("");
     }
   }, [files, format, quality]);
@@ -187,9 +188,9 @@ export default function BackgroundRemover() {
             <div className="flex flex-wrap gap-4">
               <Button
                 onClick={processImages}
-                disabled={files.length === 0 || processingFiles.size > 0}
+                disabled={files.length === 0 || files.some((f) => f.isProcessing)}
               >
-                {processingFiles.size > 0 ? "Processing..." : "Remove Background"}
+                {files.some((f) => f.isProcessing) ? "Processing..." : "Remove Background"}
               </Button>
               <Button
                 onClick={downloadAll}
@@ -223,8 +224,6 @@ export default function BackgroundRemover() {
                   file={file}
                   format={format}
                   onRemove={() => handleRemoveFile(fileIndex)}
-                  isProcessing={processingFiles.has(file.name)}
-                  isError={errorFiles.has(file.name)}
                   extraData={
                     <div className="space-y-0.5">
                       <p className="text-muted-foreground text-xs">

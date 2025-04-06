@@ -9,6 +9,8 @@ export interface ImageFile {
   newWidth?: number;
   newHeight?: number;
   processed?: Blob;
+  isProcessing?: boolean;
+  isError?: boolean;
 }
 
 export type ConversionFormat = "png" | "jpeg" | "webp" | "avif" | "bmp" | "tiff";

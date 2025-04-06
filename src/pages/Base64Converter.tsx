@@ -15,8 +15,6 @@ interface Base64ImageFile extends ImageFile {
 
 export default function Base64Converter() {
   const [files, setFiles] = useState<Base64ImageFile[]>([]);
-  const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
-  const [errorFiles, setErrorFiles] = useState<Set<string>>(new Set());
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
@@ -30,35 +28,53 @@ export default function Base64Converter() {
   const convertToBase64 = useCallback(async () => {
     if (files.length === 0) return;
 
-    setProcessingFiles(new Set(files.map((f) => f.name)));
-    setErrorFiles(new Set());
-    try {
-      const processedFiles = await Promise.all(
-        files.map(async (imageFile) => {
-          try {
-            const base64String = await fileToBase64(imageFile.file);
-            const htmlImgTag = createImgTagWithBase64(base64String);
+    // Mark all files as processing
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        isProcessing: true,
+        isError: false,
+      }))
+    );
 
-            return {
-              ...imageFile,
-              // Assign original file to processed because we just used it for preview
-              processed: imageFile.file,
-              base64String,
-              htmlImgTag,
-            };
-          } catch (error) {
-            console.error(`Error converting ${imageFile.name} to base64:`, error);
-            setErrorFiles((prev) => new Set([...prev, imageFile.name]));
-            return imageFile;
-          }
-        })
-      );
-      setFiles(processedFiles);
-    } catch (error) {
-      console.error("Error converting to base64:", error);
-    } finally {
-      setProcessingFiles(new Set());
-    }
+    // Create a copy of the files array to modify
+    const processedFiles = [...files];
+
+    // Process all files in parallel but update state individually
+    const promises = files.map(async (imageFile, index) => {
+      try {
+        const base64String = await fileToBase64(imageFile.file);
+        const htmlImgTag = createImgTagWithBase64(base64String);
+
+        // Update this single file in our copy
+        processedFiles[index] = {
+          ...imageFile,
+          processed: imageFile.file,
+          base64String,
+          htmlImgTag,
+          isProcessing: false,
+          isError: false,
+        };
+
+        // Update state to reflect this one file's completion
+        setFiles([...processedFiles]);
+      } catch (error) {
+        console.error(`Error converting ${imageFile.name} to base64:`, error);
+
+        // Mark as error in our copy
+        processedFiles[index] = {
+          ...imageFile,
+          isProcessing: false,
+          isError: true,
+        };
+
+        // Update state to reflect this file's error
+        setFiles([...processedFiles]);
+      }
+    });
+
+    // Wait for all processes to complete (though UI will update as each finishes)
+    await Promise.all(promises);
   }, [files]);
 
   const viewBase64Output = useCallback((index: number) => {
@@ -85,9 +101,9 @@ export default function Base64Converter() {
           <div className="flex flex-wrap gap-4">
             <Button
               onClick={convertToBase64}
-              disabled={files.length === 0 || processingFiles.size > 0}
+              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
             >
-              {processingFiles.size > 0 ? "Converting..." : "Convert to Base64"}
+              {files.some((f) => f.isProcessing) ? "Converting..." : "Convert to Base64"}
             </Button>
             <Button
               onClick={() => setFiles([])}
@@ -107,8 +123,6 @@ export default function Base64Converter() {
                 file={file}
                 format={extractImageFormat(file.name)}
                 onRemove={() => handleRemoveFile(fileIndex)}
-                isProcessing={processingFiles.has(file.name)}
-                isError={errorFiles.has(file.name)}
                 hideDownload={true}
                 extraData={
                   <div className="space-y-0.5">
