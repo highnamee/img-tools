@@ -13,7 +13,6 @@ import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
 import { ImageFile } from "@/services/imageService";
 import { downloadAllFiles } from "@/services/fileService";
-import { removeBackground } from "@imgly/background-removal";
 import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 
 type OutputFormat = "png" | "jpeg" | "webp";
@@ -64,6 +63,8 @@ export default function BackgroundRemover() {
         const imageFile = files[i];
 
         try {
+          const { removeBackground } = await import("@imgly/background-removal");
+
           const processedBlob = await removeBackground(imageFile.file, {
             device: "gpu",
             output: {
