@@ -7,6 +7,7 @@ import { ImageFile } from "@/services/imageService";
 import { fileToBase64, createImgTagWithBase64 } from "@/services/base64Service";
 import { Base64Modal } from "@/components/Base64Modal";
 import { extractImageFormat } from "@/utils/imageUtils";
+import { createImageProcessingQueue } from "@/services/queueService";
 
 interface Base64ImageFile extends ImageFile {
   base64String?: string;
@@ -16,6 +17,15 @@ interface Base64ImageFile extends ImageFile {
 export default function Base64Converter() {
   const [files, setFiles] = useState<Base64ImageFile[]>([]);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<{
+    total: number;
+    completed: number;
+    processing: number;
+  }>({
+    total: 0,
+    completed: 0,
+    processing: 0,
+  });
 
   const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
@@ -28,53 +38,93 @@ export default function Base64Converter() {
   const convertToBase64 = useCallback(async () => {
     if (files.length === 0) return;
 
-    // Mark all files as processing
+    // Create a processing queue with max 3 concurrent tasks
+    const queue = createImageProcessingQueue<Base64ImageFile>();
+
+    // Mark all files as not processing yet
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
         ...file,
-        isProcessing: true,
+        isProcessing: false,
         isError: false,
       }))
     );
 
-    // Create a copy of the files array to modify
-    const processedFiles = [...files];
-
-    // Process all files in parallel but update state individually
-    const promises = files.map(async (imageFile, index) => {
-      try {
-        const base64String = await fileToBase64(imageFile.file);
-        const htmlImgTag = createImgTagWithBase64(base64String);
-
-        // Update this single file in our copy
-        processedFiles[index] = {
-          ...imageFile,
-          processed: imageFile.file,
-          base64String,
-          htmlImgTag,
-          isProcessing: false,
-          isError: false,
-        };
-
-        // Update state to reflect this one file's completion
-        setFiles([...processedFiles]);
-      } catch (error) {
-        console.error(`Error converting ${imageFile.name} to base64:`, error);
-
-        // Mark as error in our copy
-        processedFiles[index] = {
-          ...imageFile,
-          isProcessing: false,
-          isError: true,
-        };
-
-        // Update state to reflect this file's error
-        setFiles([...processedFiles]);
-      }
+    // Set initial processing status
+    setProcessingStatus({
+      total: files.length,
+      completed: 0,
+      processing: 0,
     });
 
-    // Wait for all processes to complete (though UI will update as each finishes)
-    await Promise.all(promises);
+    // Add all tasks to the queue
+    files.forEach((imageFile, index) => {
+      queue.enqueue(
+        // Task to execute
+        async () => {
+          // Mark this file as processing
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = {
+              ...updatedFiles[index],
+              isProcessing: true,
+            };
+            return updatedFiles;
+          });
+
+          // Update processing status
+          setProcessingStatus((prev) => ({
+            ...prev,
+            processing: prev.processing + 1,
+          }));
+
+          const base64String = await fileToBase64(imageFile.file);
+          const htmlImgTag = createImgTagWithBase64(base64String);
+
+          return {
+            ...imageFile,
+            processed: imageFile.file,
+            base64String,
+            htmlImgTag,
+            isProcessing: false,
+            isError: false,
+          };
+        },
+        // On complete callback
+        (result) => {
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = result;
+            return updatedFiles;
+          });
+
+          setProcessingStatus((prev) => ({
+            ...prev,
+            completed: prev.completed + 1,
+            processing: prev.processing - 1,
+          }));
+        },
+        // On error callback
+        (error) => {
+          console.error(`Error converting ${imageFile.name} to base64:`, error);
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = {
+              ...updatedFiles[index],
+              isProcessing: false,
+              isError: true,
+            };
+            return updatedFiles;
+          });
+
+          setProcessingStatus((prev) => ({
+            ...prev,
+            completed: prev.completed + 1,
+            processing: prev.processing - 1,
+          }));
+        }
+      );
+    });
   }, [files]);
 
   const viewBase64Output = useCallback((index: number) => {
@@ -98,20 +148,29 @@ export default function Base64Converter() {
             backgrounds
           </p>
 
-          <div className="flex flex-wrap gap-4">
-            <Button
-              onClick={convertToBase64}
-              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-            >
-              {files.some((f) => f.isProcessing) ? "Converting..." : "Convert to Base64"}
-            </Button>
-            <Button
-              onClick={() => setFiles([])}
-              disabled={files.length === 0}
-              variant="destructive"
-            >
-              Clear All
-            </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={convertToBase64}
+                disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+              >
+                {processingStatus.processing > 0 ? `Converting...` : "Convert Images"}
+              </Button>
+              <Button
+                onClick={() => setFiles([])}
+                disabled={files.length === 0}
+                variant="destructive"
+              >
+                Clear All
+              </Button>
+            </div>
+
+            {processingStatus.processing > 0 && (
+              <div className="text-muted-foreground text-xs">
+                Processing {processingStatus.processing} images in parallel (completed{" "}
+                {processingStatus.completed} of {processingStatus.total})
+              </div>
+            )}
           </div>
         </div>
 

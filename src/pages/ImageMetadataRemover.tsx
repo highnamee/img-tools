@@ -8,6 +8,7 @@ import { ImageFile } from "@/services/imageService";
 import { MetadataField, extractMetadata, removeMetadata } from "@/services/metadataService";
 import { downloadAllFiles } from "@/services/fileService";
 import { extractImageFormat } from "@/utils/imageUtils";
+import { createImageProcessingQueue } from "@/services/queueService";
 
 interface ImageWithMetadata extends ImageFile {
   metadata?: MetadataField[];
@@ -17,6 +18,15 @@ interface ImageWithMetadata extends ImageFile {
 export default function ImageMetadataRemover() {
   const [files, setFiles] = useState<ImageWithMetadata[]>([]);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<{
+    total: number;
+    completed: number;
+    processing: number;
+  }>({
+    total: 0,
+    completed: 0,
+    processing: 0,
+  });
 
   const handleFilesAdded = useCallback(async (newFiles: ImageFile[]) => {
     const filesWithMetadata = await Promise.all(
@@ -47,50 +57,90 @@ export default function ImageMetadataRemover() {
   }, []);
 
   const processImages = useCallback(async () => {
-    // Mark all files as processing
+    // Create a processing queue with max 3 concurrent tasks
+    const queue = createImageProcessingQueue<ImageWithMetadata>();
+
+    // Mark all files as not processing yet
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
         ...file,
-        isProcessing: true,
+        isProcessing: false,
         isError: false,
       }))
     );
 
-    // Create a copy of the files array to modify
-    const processedFiles = [...files];
-
-    // Process all files in parallel but update state individually
-    const promises = files.map(async (file, index) => {
-      try {
-        const processedBlob = await removeMetadata(file.file);
-
-        // Update this single file in our copy
-        processedFiles[index] = {
-          ...file,
-          processed: processedBlob,
-          isProcessing: false,
-          isError: false,
-        };
-
-        // Update state to reflect this one file's completion
-        setFiles([...processedFiles]);
-      } catch (error) {
-        console.error("Error processing image:", error);
-
-        // Mark as error in our copy
-        processedFiles[index] = {
-          ...file,
-          isProcessing: false,
-          isError: true,
-        };
-
-        // Update state to reflect this file's error
-        setFiles([...processedFiles]);
-      }
+    // Set initial processing status
+    setProcessingStatus({
+      total: files.length,
+      completed: 0,
+      processing: 0,
     });
 
-    // Wait for all processes to complete (though UI will update as each finishes)
-    await Promise.all(promises);
+    // Add all tasks to the queue
+    files.forEach((file, index) => {
+      queue.enqueue(
+        // Task to execute
+        async () => {
+          // Mark this file as processing
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = {
+              ...updatedFiles[index],
+              isProcessing: true,
+            };
+            return updatedFiles;
+          });
+
+          // Update processing status
+          setProcessingStatus((prev) => ({
+            ...prev,
+            processing: prev.processing + 1,
+          }));
+
+          const processedBlob = await removeMetadata(file.file);
+
+          return {
+            ...file,
+            processed: processedBlob,
+            isProcessing: false,
+            isError: false,
+          };
+        },
+        // On complete callback
+        (result) => {
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = result;
+            return updatedFiles;
+          });
+
+          setProcessingStatus((prev) => ({
+            ...prev,
+            completed: prev.completed + 1,
+            processing: prev.processing - 1,
+          }));
+        },
+        // On error callback
+        (error) => {
+          console.error("Error processing image:", error);
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = {
+              ...updatedFiles[index],
+              isProcessing: false,
+              isError: true,
+            };
+            return updatedFiles;
+          });
+
+          setProcessingStatus((prev) => ({
+            ...prev,
+            completed: prev.completed + 1,
+            processing: prev.processing - 1,
+          }));
+        }
+      );
+    });
   }, [files]);
 
   const downloadAll = useCallback(() => {
@@ -121,27 +171,36 @@ export default function ImageMetadataRemover() {
             and other sensitive data
           </p>
 
-          <div className="flex flex-wrap gap-4">
-            <Button
-              onClick={processImages}
-              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-            >
-              {files.some((f) => f.isProcessing) ? "Processing..." : "Process Images"}
-            </Button>
-            <Button
-              onClick={downloadAll}
-              disabled={!files.some((f) => f.processed)}
-              variant="outline"
-            >
-              Download All
-            </Button>
-            <Button
-              onClick={() => setFiles([])}
-              disabled={files.length === 0}
-              variant="destructive"
-            >
-              Clear All
-            </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={processImages}
+                disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+              >
+                {processingStatus.processing > 0 ? `Processing...` : "Process Images"}
+              </Button>
+              <Button
+                onClick={downloadAll}
+                disabled={!files.some((f) => f.processed)}
+                variant="outline"
+              >
+                Download All
+              </Button>
+              <Button
+                onClick={() => setFiles([])}
+                disabled={files.length === 0}
+                variant="destructive"
+              >
+                Clear All
+              </Button>
+            </div>
+
+            {processingStatus.processing > 0 && (
+              <div className="text-muted-foreground text-xs">
+                Processing {processingStatus.processing} images in parallel (completed{" "}
+                {processingStatus.completed} of {processingStatus.total})
+              </div>
+            )}
           </div>
         </div>
 

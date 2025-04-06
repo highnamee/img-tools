@@ -23,6 +23,7 @@ import {
 import { downloadAllFiles } from "@/services/fileService";
 import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 import { ImageDiffModal } from "@/components/ImageDiffModal";
+import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function ImageConverter() {
   const [files, setFiles] = useState<ImageFile[]>([]);
@@ -31,6 +32,15 @@ export default function ImageConverter() {
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
+  const [processingStatus, setProcessingStatus] = useState<{
+    total: number;
+    completed: number;
+    processing: number;
+  }>({
+    total: 0,
+    completed: 0,
+    processing: 0,
+  });
 
   useEffect(() => {
     setQuality(formatRecommendations[format].defaultQuality);
@@ -74,64 +84,104 @@ export default function ImageConverter() {
   };
 
   const convertImages = useCallback(async () => {
+    // Create a processing queue with max 3 concurrent tasks
+    const queue = createImageProcessingQueue<ImageFile>();
+
     // Mark all files as processing
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
         ...file,
-        isProcessing: true,
+        isProcessing: false,
         isError: false,
       }))
     );
 
-    // Create a copy of the files array to modify
-    const processedFiles = [...files];
-
-    // Process all files in parallel but update state individually
-    const promises = files.map(async (imageFile, index) => {
-      try {
-        const processedBlob = await convertImage(
-          imageFile.file,
-          format,
-          quality,
-          enableResize ? resizeOptions : undefined
-        );
-
-        // Calculate new dimensions
-        const img = new Image();
-        img.src = URL.createObjectURL(processedBlob);
-        await new Promise((resolve) => {
-          img.onload = resolve;
-        });
-
-        // Update this single file in our copy
-        processedFiles[index] = {
-          ...imageFile,
-          processed: processedBlob,
-          newWidth: img.width,
-          newHeight: img.height,
-          isProcessing: false,
-          isError: false,
-        };
-
-        // Update state to reflect this one file's completion
-        setFiles([...processedFiles]);
-      } catch (error) {
-        console.error(`Error converting image ${imageFile.name}:`, error);
-
-        // Mark as error in our copy
-        processedFiles[index] = {
-          ...imageFile,
-          isProcessing: false,
-          isError: true,
-        };
-
-        // Update state to reflect this file's error
-        setFiles([...processedFiles]);
-      }
+    // Set initial processing status
+    setProcessingStatus({
+      total: files.length,
+      completed: 0,
+      processing: 0,
     });
 
-    // Wait for all processes to complete (though UI will update as each finishes)
-    await Promise.all(promises);
+    // Add all tasks to the queue
+    files.forEach((imageFile, index) => {
+      queue.enqueue(
+        // Task to execute
+        async () => {
+          // Mark this file as processing
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = {
+              ...updatedFiles[index],
+              isProcessing: true,
+            };
+            return updatedFiles;
+          });
+
+          // Update processing status
+          setProcessingStatus((prev) => ({
+            ...prev,
+            processing: prev.processing + 1,
+          }));
+
+          const processedBlob = await convertImage(
+            imageFile.file,
+            format,
+            quality,
+            enableResize ? resizeOptions : undefined
+          );
+
+          // Calculate new dimensions
+          const img = new Image();
+          img.src = URL.createObjectURL(processedBlob);
+          await new Promise((resolve) => {
+            img.onload = resolve;
+          });
+
+          return {
+            ...imageFile,
+            processed: processedBlob,
+            newWidth: img.width,
+            newHeight: img.height,
+            isProcessing: false,
+            isError: false,
+          };
+        },
+        // On complete callback
+        (result) => {
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = result;
+            return updatedFiles;
+          });
+
+          setProcessingStatus((prev) => ({
+            ...prev,
+            completed: prev.completed + 1,
+            processing: prev.processing - 1,
+          }));
+        },
+        // On error callback
+        (error) => {
+          console.error(`Error converting image ${imageFile.name}:`, error);
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[index] = {
+              ...updatedFiles[index],
+              isProcessing: false,
+              isError: true,
+            };
+            return updatedFiles;
+          });
+
+          setProcessingStatus((prev) => ({
+            ...prev,
+            completed: prev.completed + 1,
+            processing: prev.processing - 1,
+          }));
+        }
+      );
+    });
   }, [files, format, quality, enableResize, resizeOptions]);
 
   const downloadAll = useCallback(() => {
@@ -243,27 +293,36 @@ export default function ImageConverter() {
             </p>
           </div>
 
-          <div className="flex flex-wrap gap-4">
-            <Button
-              onClick={convertImages}
-              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-            >
-              {files.some((f) => f.isProcessing) ? "Converting..." : "Convert Images"}
-            </Button>
-            <Button
-              onClick={downloadAll}
-              disabled={!files.some((f) => f.processed)}
-              variant="outline"
-            >
-              Download All
-            </Button>
-            <Button
-              onClick={() => setFiles([])}
-              disabled={files.length === 0}
-              variant="destructive"
-            >
-              Clear All
-            </Button>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-wrap gap-4">
+              <Button
+                onClick={convertImages}
+                disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+              >
+                {processingStatus.processing > 0 ? `Converting...` : "Convert Images"}
+              </Button>
+              <Button
+                onClick={downloadAll}
+                disabled={!files.some((f) => f.processed)}
+                variant="outline"
+              >
+                Download All
+              </Button>
+              <Button
+                onClick={() => setFiles([])}
+                disabled={files.length === 0}
+                variant="destructive"
+              >
+                Clear All
+              </Button>
+            </div>
+
+            {processingStatus.processing > 0 && (
+              <div className="text-muted-foreground text-xs">
+                Processing {processingStatus.processing} images in parallel (completed{" "}
+                {processingStatus.completed} of {processingStatus.total})
+              </div>
+            )}
           </div>
         </div>
 
