@@ -1,3 +1,4 @@
+// Update Header.tsx to add the background remover navigation
 import { NavLink, Link } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import {
@@ -12,6 +13,7 @@ import {
   CONVERTER_PATH,
   METADATA_REMOVER_PATH,
   BASE64_CONVERTER_PATH,
+  BACKGROUND_REMOVER_PATH,
 } from "@/constants/routes";
 
 export function Header() {
@@ -21,7 +23,7 @@ export function Header() {
         <NavigationMenu className="min-w-full">
           <NavigationMenuList className="flex items-center gap-20">
             {/* Trigger for mobile view */}
-            <NavigationMenuItem className="block md:hidden">
+            <NavigationMenuItem className="block lg:hidden">
               <NavigationMenuTrigger className="flex items-center gap-2">
                 <Link
                   to={HOME_PATH}
@@ -32,7 +34,7 @@ export function Header() {
                 </Link>
               </NavigationMenuTrigger>
               <NavigationMenuContent>
-                <div className="flex flex-col">
+                <div className="flex w-52 flex-col">
                   <NavLink
                     to={CONVERTER_PATH}
                     className={({ isActive }) =>
@@ -69,12 +71,24 @@ export function Header() {
                   >
                     Base64 Converter
                   </NavLink>
+                  <NavLink
+                    to={BACKGROUND_REMOVER_PATH}
+                    className={({ isActive }) =>
+                      cn(
+                        "hover:text-primary text-md p-2 font-medium transition-colors",
+                        isActive ? "text-primary" : "text-muted-foreground"
+                      )
+                    }
+                    viewTransition
+                  >
+                    Background Remover
+                  </NavLink>
                 </div>
               </NavigationMenuContent>
             </NavigationMenuItem>
 
             {/* Visible in desktop view */}
-            <NavigationMenuItem className="hidden md:flex">
+            <NavigationMenuItem className="hidden lg:flex">
               <Link to={HOME_PATH} className="flex items-center gap-2">
                 <span className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent">
                   IMG TOOLS
@@ -82,7 +96,7 @@ export function Header() {
               </Link>
             </NavigationMenuItem>
 
-            <div className="hidden items-center gap-6 md:flex">
+            <div className="hidden items-center gap-6 lg:flex">
               <NavigationMenuItem>
                 <NavLink
                   to={CONVERTER_PATH}
@@ -123,6 +137,20 @@ export function Header() {
                   viewTransition
                 >
                   Base64 Converter
+                </NavLink>
+              </NavigationMenuItem>
+              <NavigationMenuItem>
+                <NavLink
+                  to={BACKGROUND_REMOVER_PATH}
+                  className={({ isActive }) =>
+                    cn(
+                      "hover:text-primary text-md font-medium transition-colors",
+                      isActive ? "text-primary" : "text-muted-foreground"
+                    )
+                  }
+                  viewTransition
+                >
+                  Background Remover
                 </NavLink>
               </NavigationMenuItem>
             </div>

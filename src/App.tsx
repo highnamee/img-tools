@@ -1,15 +1,18 @@
+// Update App.tsx to add the background remover route
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Header } from "@/components/Header";
 import { Footer } from "@/components/Footer";
 import ImageConverter from "./pages/ImageConverter";
 import ImageMetadataRemover from "./pages/ImageMetadataRemover";
 import Base64Converter from "./pages/Base64Converter";
+import BackgroundRemover from "./pages/BackgroundRemover";
 import LandingPage from "./pages/LandingPage";
 import {
   BASE_PATH,
   CONVERTER_PATH,
   METADATA_REMOVER_PATH,
   BASE64_CONVERTER_PATH,
+  BACKGROUND_REMOVER_PATH,
   HOME_PATH,
 } from "@/constants/routes";
 
@@ -24,6 +27,7 @@ function App() {
             <Route path={CONVERTER_PATH} element={<ImageConverter />} />
             <Route path={METADATA_REMOVER_PATH} element={<ImageMetadataRemover />} />
             <Route path={BASE64_CONVERTER_PATH} element={<Base64Converter />} />
+            <Route path={BACKGROUND_REMOVER_PATH} element={<BackgroundRemover />} />
           </Routes>
         </main>
         <Footer />
