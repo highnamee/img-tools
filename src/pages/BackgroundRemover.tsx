@@ -21,6 +21,7 @@ type OutputFormat = "png" | "jpeg" | "webp";
 export default function BackgroundRemover() {
   const [files, setFiles] = useState<ImageFile[]>([]);
   const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
+  const [errorFiles, setErrorFiles] = useState<Set<string>>(new Set());
   const [format, setFormat] = useState<OutputFormat>("png");
   const [quality, setQuality] = useState<number>(80);
   const [loadingStatus, setLoadingStatus] = useState<string>("");
@@ -52,6 +53,7 @@ export default function BackgroundRemover() {
 
   const processImages = useCallback(async () => {
     setProcessingFiles(new Set(files.map((f) => f.name)));
+    setErrorFiles(new Set());
     setLoadingStatus("Initializing...");
 
     try {
@@ -104,6 +106,13 @@ export default function BackgroundRemover() {
           });
         } catch (error) {
           console.error(`Error removing background from ${imageFile.name}:`, error);
+          setErrorFiles((prev) => new Set([...prev, imageFile.name]));
+
+          setProcessingFiles((prev) => {
+            const newSet = new Set(prev);
+            newSet.delete(imageFile.name);
+            return newSet;
+          });
         }
       }
     } catch (error) {
@@ -214,6 +223,7 @@ export default function BackgroundRemover() {
                   format={format}
                   onRemove={() => handleRemoveFile(fileIndex)}
                   isProcessing={processingFiles.has(file.name)}
+                  isError={errorFiles.has(file.name)}
                   extraData={
                     <div className="space-y-0.5">
                       <p className="text-muted-foreground text-xs">

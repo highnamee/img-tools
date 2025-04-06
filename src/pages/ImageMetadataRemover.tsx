@@ -17,6 +17,7 @@ interface ImageWithMetadata extends ImageFile {
 export default function ImageMetadataRemover() {
   const [files, setFiles] = useState<ImageWithMetadata[]>([]);
   const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
+  const [errorFiles, setErrorFiles] = useState<Set<string>>(new Set());
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   const handleFilesAdded = useCallback(async (newFiles: ImageFile[]) => {
@@ -49,6 +50,7 @@ export default function ImageMetadataRemover() {
 
   const processImages = useCallback(async () => {
     setProcessingFiles(new Set(files.map((f) => f.name)));
+    setErrorFiles(new Set());
     try {
       const processedFiles = await Promise.all(
         files.map(async (file) => {
@@ -60,6 +62,7 @@ export default function ImageMetadataRemover() {
             };
           } catch (error) {
             console.error("Error processing image:", error);
+            setErrorFiles((prev) => new Set([...prev, file.name]));
             return file;
           }
         })
@@ -134,6 +137,7 @@ export default function ImageMetadataRemover() {
                   format={extractImageFormat(file.name)}
                   onRemove={() => handleRemoveFile(fileIndex)}
                   isProcessing={processingFiles.has(file.name)}
+                  isError={errorFiles.has(file.name)}
                   extraData={
                     file.metadata && file.metadata.length > 0 ? (
                       <div className="space-y-1">

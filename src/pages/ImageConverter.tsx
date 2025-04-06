@@ -29,6 +29,7 @@ export default function ImageConverter() {
   const [format, setFormat] = useState<ConversionFormat>("png");
   const [quality, setQuality] = useState(80);
   const [processingFiles, setProcessingFiles] = useState<Set<string>>(new Set());
+  const [errorFiles, setErrorFiles] = useState<Set<string>>(new Set());
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
@@ -75,29 +76,36 @@ export default function ImageConverter() {
 
   const convertImages = useCallback(async () => {
     setProcessingFiles(new Set(files.map((f) => f.name)));
+    setErrorFiles(new Set());
     try {
       const processedFiles = await Promise.all(
         files.map(async (imageFile) => {
-          const processedBlob = await convertImage(
-            imageFile.file,
-            format,
-            quality,
-            enableResize ? resizeOptions : undefined
-          );
+          try {
+            const processedBlob = await convertImage(
+              imageFile.file,
+              format,
+              quality,
+              enableResize ? resizeOptions : undefined
+            );
 
-          // Calculate new dimensions
-          const img = new Image();
-          img.src = URL.createObjectURL(processedBlob);
-          await new Promise((resolve) => {
-            img.onload = resolve;
-          });
+            // Calculate new dimensions
+            const img = new Image();
+            img.src = URL.createObjectURL(processedBlob);
+            await new Promise((resolve) => {
+              img.onload = resolve;
+            });
 
-          return {
-            ...imageFile,
-            processed: processedBlob,
-            newWidth: img.width,
-            newHeight: img.height,
-          };
+            return {
+              ...imageFile,
+              processed: processedBlob,
+              newWidth: img.width,
+              newHeight: img.height,
+            };
+          } catch (error) {
+            console.error(`Error converting image ${imageFile.name}:`, error);
+            setErrorFiles((prev) => new Set([...prev, imageFile.name]));
+            return imageFile;
+          }
         })
       );
       setFiles(processedFiles);
@@ -250,6 +258,7 @@ export default function ImageConverter() {
                 format={format}
                 onRemove={() => handleRemoveFile(fileIndex)}
                 isProcessing={processingFiles.has(file.name)}
+                isError={errorFiles.has(file.name)}
                 extraData={
                   <div className="space-y-0.5">
                     <p className="text-muted-foreground text-xs">
