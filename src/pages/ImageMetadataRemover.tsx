@@ -87,6 +87,7 @@ export default function ImageMetadataRemover() {
             updatedFiles[index] = {
               ...updatedFiles[index],
               isProcessing: true,
+              isError: false,
             };
             return updatedFiles;
           });

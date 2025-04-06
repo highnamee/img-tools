@@ -49,23 +49,21 @@ export default function BackgroundRemover() {
   }, []);
 
   const processImages = useCallback(async () => {
-    // Mark all files as processing
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        isProcessing: true,
-        isError: false,
-      }))
-    );
-
-    setLoadingStatus("Initializing...");
-
     try {
       // Process images sequentially instead of in parallel
-      const processedFiles = [...files];
 
       for (let i = 0; i < files.length; i++) {
         const imageFile = files[i];
+
+        setFiles((prevFiles) => {
+          const updatedFiles = [...prevFiles];
+          updatedFiles[i] = {
+            ...updatedFiles[i],
+            isProcessing: true,
+            isError: false,
+          };
+          return updatedFiles;
+        });
 
         try {
           const { removeBackground } = await import("@imgly/background-removal");
@@ -77,13 +75,12 @@ export default function BackgroundRemover() {
               quality: quality / 100,
             },
             progress: (key, current, total) => {
-              const operationType = key.startsWith("fetch:")
-                ? "fetch"
-                : key.replace("compute:", "");
-
-              // Display a more user-friendly message
-              const statusMessage = `Image ${i + 1}/${files.length} - ${operationType}: (${Math.round((current / total) * 100)}%)`;
-              setLoadingStatus(statusMessage);
+              if (key.startsWith("fetch:")) {
+                const percentComplete = Math.round((current / total) * 100);
+                setLoadingStatus(
+                  percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
+                );
+              }
             },
           });
 
@@ -94,28 +91,32 @@ export default function BackgroundRemover() {
             img.onload = resolve;
           });
 
-          processedFiles[i] = {
-            ...imageFile,
-            processed: processedBlob,
-            newWidth: img.width,
-            newHeight: img.height,
-            isProcessing: false,
-            isError: false,
-          };
-
-          // Update files state after each image is processed to show progress
-          setFiles([...processedFiles]);
+          // Update the processed file using functional state update
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[i] = {
+              ...updatedFiles[i],
+              processed: processedBlob,
+              newWidth: img.width,
+              newHeight: img.height,
+              isProcessing: false,
+              isError: false,
+            };
+            return updatedFiles;
+          });
         } catch (error) {
           console.error(`Error removing background from ${imageFile.name}:`, error);
 
-          // Mark as error
-          processedFiles[i] = {
-            ...imageFile,
-            isProcessing: false,
-            isError: true,
-          };
-
-          setFiles([...processedFiles]);
+          // Mark as error using functional state update
+          setFiles((prevFiles) => {
+            const updatedFiles = [...prevFiles];
+            updatedFiles[i] = {
+              ...updatedFiles[i],
+              isProcessing: false,
+              isError: true,
+            };
+            return updatedFiles;
+          });
         }
       }
     } catch (error) {

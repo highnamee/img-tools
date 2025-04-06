@@ -68,6 +68,7 @@ export default function Base64Converter() {
             updatedFiles[index] = {
               ...updatedFiles[index],
               isProcessing: true,
+              isError: false,
             };
             return updatedFiles;
           });

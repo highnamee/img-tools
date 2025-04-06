@@ -114,6 +114,7 @@ export default function ImageConverter() {
             updatedFiles[index] = {
               ...updatedFiles[index],
               isProcessing: true,
+              isError: false,
             };
             return updatedFiles;
           });
