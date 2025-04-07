@@ -1,39 +1,30 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Switch } from "@/components/ui/switch";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
-import { ImageFile } from "@/services/imageService";
+import { ImageFile, convertImage, ResizeOptions } from "@/services/imageService";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageDiffModal } from "@/components/ImageDiffModal";
-
-type OutputFormat = "png" | "jpeg" | "webp";
+import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function BackgroundRemover() {
   const [files, setFiles] = useState<ImageFile[]>([]);
-  const [format, setFormat] = useState<OutputFormat>("png");
   const [quality, setQuality] = useState<number>(80);
+  const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
+  const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
   const [processingStatus, setProcessingStatus] = useState<{
     waiting: number;
     processing: number;
-    currentIndex: number;
   }>({
     waiting: 0,
     processing: 0,
-    currentIndex: -1,
   });
   const [loadingStatus, setLoadingStatus] = useState<string>("");
-
-  useEffect(() => setQuality(80), [format]);
 
   const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
@@ -47,9 +38,25 @@ export default function BackgroundRemover() {
     setSelectedFileIndex(index);
   }, []);
 
+  const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setResizeOptions((prev) => ({
+      ...prev,
+      width: e.target.value ? parseInt(e.target.value) : 0,
+    }));
+  };
+
+  const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setResizeOptions((prev) => ({
+      ...prev,
+      height: e.target.value ? parseInt(e.target.value) : 0,
+    }));
+  };
+
   const processImages = useCallback(async () => {
     try {
-      // Reset files error state
+      // Create a processing queue with max 1 concurrent task
+      const queue = createImageProcessingQueue<ImageFile>(1);
+
       setFiles((prevFiles) =>
         prevFiles.map((file) => ({
           ...file,
@@ -57,117 +64,124 @@ export default function BackgroundRemover() {
         }))
       );
 
-      // Prepare files to process (exclude already processed ones)
-      const filesToProcess = files.filter((file) => !file.processed);
-      if (filesToProcess.length === 0) return;
+      // Add all tasks to the queue
+      files.forEach((imageFile, index) => {
+        if (imageFile.processed) return;
 
-      // Set initial processing status
-      setProcessingStatus({
-        waiting: filesToProcess.length - 1, // First one is processing, rest are waiting
-        processing: 1, // Always 1 for sequential processing
-        currentIndex: 0,
+        queue.enqueue(
+          async () => {
+            // Mark this file as processing
+            setFiles((prevFiles) => {
+              const updatedFiles = [...prevFiles];
+              updatedFiles[index] = {
+                ...updatedFiles[index],
+                isProcessing: true,
+                isError: false,
+              };
+              return updatedFiles;
+            });
+
+            try {
+              const { removeBackground } = await import("@imgly/background-removal");
+
+              const processedBlob = await removeBackground(imageFile.file, {
+                device: "gpu",
+                output: {
+                  format: "image/png",
+                  quality: 1,
+                },
+                progress: (key, current, total) => {
+                  if (key.startsWith("fetch:")) {
+                    const percentComplete = Math.round((current / total) * 100);
+                    setLoadingStatus(
+                      percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
+                    );
+                  }
+                },
+              });
+
+              // Convert Blob to File for the convertImage function
+              const processedFile = new File([processedBlob], imageFile.name, {
+                type: "image/png",
+                lastModified: Date.now(),
+              });
+
+              // Post-process with image compression using convertImage from ImageConverter
+              const compressedBlob = await convertImage(
+                processedFile,
+                "png",
+                quality,
+                enableResize ? resizeOptions : undefined
+              );
+
+              // Calculate new dimensions
+              const img = new Image();
+              img.src = URL.createObjectURL(compressedBlob);
+              await new Promise((resolve) => {
+                img.onload = resolve;
+              });
+
+              return {
+                ...imageFile,
+                processed: compressedBlob,
+                newWidth: img.width,
+                newHeight: img.height,
+                isProcessing: false,
+                isError: false,
+              };
+            } catch (error) {
+              console.error(`Error removing background from ${imageFile.name}:`, error);
+              throw error;
+            }
+          },
+          // On complete callback
+          (result) => {
+            setFiles((prevFiles) => {
+              const updatedFiles = [...prevFiles];
+              updatedFiles[index] = result;
+              return updatedFiles;
+            });
+          },
+          // On error callback
+          (error) => {
+            console.error(`Error processing image ${imageFile.name}:`, error);
+            setFiles((prevFiles) => {
+              const updatedFiles = [...prevFiles];
+              updatedFiles[index] = {
+                ...updatedFiles[index],
+                isProcessing: false,
+                isError: true,
+              };
+              return updatedFiles;
+            });
+          },
+          // On progress callback
+          (processing, waiting) => {
+            setProcessingStatus({ waiting, processing });
+          }
+        );
       });
 
-      // Process images sequentially (not in parallel)
-      for (let i = 0; i < filesToProcess.length; i++) {
-        const imageFile = filesToProcess[i];
-        const fileIndex = files.findIndex((f) => f === imageFile);
-
-        // Update current processing index
-        setProcessingStatus((prev) => ({
-          ...prev,
-          waiting: filesToProcess.length - i - 1,
-          currentIndex: fileIndex,
-        }));
-
-        // Mark this file as processing
-        setFiles((prevFiles) => {
-          const updatedFiles = [...prevFiles];
-          updatedFiles[fileIndex] = {
-            ...updatedFiles[fileIndex],
-            isProcessing: true,
-            isError: false,
-          };
-          return updatedFiles;
-        });
-
-        try {
-          const { removeBackground } = await import("@imgly/background-removal");
-
-          const processedBlob = await removeBackground(imageFile.file, {
-            device: "gpu",
-            output: {
-              format: `image/${format}`,
-              quality: quality / 100,
-            },
-            progress: (key, current, total) => {
-              if (key.startsWith("fetch:")) {
-                const percentComplete = Math.round((current / total) * 100);
-                setLoadingStatus(
-                  percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
-                );
-              }
-            },
-          });
-
-          // Calculate new dimensions
-          const img = new Image();
-          img.src = URL.createObjectURL(processedBlob);
-          await new Promise((resolve) => {
-            img.onload = resolve;
-          });
-
-          // Update the processed file using functional state update
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[fileIndex] = {
-              ...updatedFiles[fileIndex],
-              processed: processedBlob,
-              newWidth: img.width,
-              newHeight: img.height,
-              isProcessing: false,
-              isError: false,
-            };
-            return updatedFiles;
-          });
-        } catch (error) {
-          console.error(`Error removing background from ${imageFile.name}:`, error);
-
-          // Mark as error using functional state update
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[fileIndex] = {
-              ...updatedFiles[fileIndex],
-              isProcessing: false,
-              isError: true,
-            };
-            return updatedFiles;
-          });
-        }
-      }
-
-      // Reset processing status when done
       setProcessingStatus({
-        waiting: 0,
-        processing: 0,
-        currentIndex: -1,
+        waiting: queue.waiting,
+        processing: queue.active,
       });
     } catch (error) {
       console.error("Error processing images:", error);
     } finally {
       setLoadingStatus("");
     }
-  }, [files, format, quality]);
+  }, [files, quality, enableResize, resizeOptions]);
 
   const downloadAll = useCallback(() => {
     const filesToDownload = files
       .filter((file) => file.processed)
       .map((file) => ({
         blob: file.processed!,
-        filename: `${file.name.split(".")[0]}-no-bg.${format}`,
+        filename: `${file.name.split(".")[0]}-no-bg.png`,
       }));
     downloadAllFiles(filesToDownload);
-  }, [files, format]);
+  }, [files]);
 
   return (
     <div className="container mx-auto py-8">
@@ -179,25 +193,11 @@ export default function BackgroundRemover() {
         <div className="space-y-6">
           <p className="text-muted-foreground text-xs">
             Remove backgrounds from your images with one click - perfect for product photos,
-            portraits, and more
+            portraits, and more.
           </p>
 
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-10">
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Output Format</label>
-                <Select value={format} onValueChange={(value) => setFormat(value as OutputFormat)}>
-                  <SelectTrigger className="w-52">
-                    <SelectValue placeholder="Select format" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="png">PNG</SelectItem>
-                    <SelectItem value="jpeg">JPEG</SelectItem>
-                    <SelectItem value="webp">WebP</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <label className="text-sm font-medium">Quality: {quality}%</label>
@@ -216,6 +216,36 @@ export default function BackgroundRemover() {
                   step={1}
                   className="w-64"
                 />
+              </div>
+              <div className="space-y-2">
+                <div className="flex items-center gap-2">
+                  <Switch checked={enableResize} onCheckedChange={setEnableResize} />
+                  <label className="font-medium">
+                    <span className="text-sm">Resize</span>
+                    <span className="text-xs">
+                      {" • Aspect ratio will be maintained automatically"}
+                    </span>
+                  </label>
+                </div>
+                {enableResize && (
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Width"
+                      value={resizeOptions.width || ""}
+                      onChange={handleWidthChange}
+                      className="w-28"
+                    />
+                    <span className="text-muted-foreground">or</span>
+                    <Input
+                      type="number"
+                      placeholder="Height"
+                      value={resizeOptions.height || ""}
+                      onChange={handleHeightChange}
+                      className="w-28"
+                    />
+                  </div>
+                )}
               </div>
             </div>
 
@@ -247,8 +277,7 @@ export default function BackgroundRemover() {
               {`${files.length} Uploaded `}
               {loadingStatus && `• ${loadingStatus}`}
               {processingStatus.processing > 0 &&
-                processingStatus.currentIndex >= 0 &&
-                `• Processing image ${processingStatus.currentIndex + 1} of ${files.length} sequentially`}
+                `• Processing ${processingStatus.processing} images`}
               {processingStatus.waiting > 0 &&
                 `• ${processingStatus.waiting} images are waiting to be processed`}
             </div>
@@ -261,7 +290,7 @@ export default function BackgroundRemover() {
               <ImagePreview
                 key={file.name + file.preview}
                 file={file}
-                format={format}
+                format="png"
                 onRemove={() => handleRemoveFile(fileIndex)}
                 extraData={
                   file.processed && (
