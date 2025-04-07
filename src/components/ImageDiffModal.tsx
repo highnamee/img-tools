@@ -4,7 +4,6 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 
-
 interface ImageDiffModalProps {
   isOpen: boolean;
   onClose: () => void;
@@ -87,13 +86,13 @@ export function ImageDiffModal({
               </label>
             </div>
           </div>
-          <ScrollArea className="h-[80vh]">
+          <ScrollArea className="h-[60vh] sm:h-[80vh]">
             <div className="space-y-4">
               <div className="space-y-2">
                 <h3 className="font-medium">
                   Original ({originalWidth}×{originalHeight})
                 </h3>
-                <div className="w-[85vw] overflow-auto sm:max-w-[1200px]">
+                <div className="w-[80vw] overflow-auto sm:max-w-[1200px]">
                   <img
                     src={originalSrc}
                     alt="Original"
@@ -107,7 +106,7 @@ export function ImageDiffModal({
                 <h3 className="font-medium">
                   Processed ({newWidth}×{newHeight})
                 </h3>
-                <div className="w-[85vw] overflow-auto sm:max-w-[1200px]">
+                <div className="w-[80vw] overflow-auto sm:max-w-[1200px]">
                   <img
                     src={processedSrc}
                     alt="Processed"
