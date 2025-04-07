@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { HOME_PATH } from "@/constants/routes";
+import { version } from "../../package.json";
 
 export function Footer() {
   return (
@@ -13,6 +14,7 @@ export function Footer() {
             >
               IMG TOOLS
             </Link>
+            <span className="text-muted-foreground ml-2 text-xs">Version: {version}</span>
           </div>
           <div className="text-muted-foreground text-sm">
             © {new Date().getFullYear()} IMG TOOLS. All rights reserved.
