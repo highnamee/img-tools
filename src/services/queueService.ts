@@ -24,12 +24,17 @@ export class ProcessQueue<R> {
    * @param onError Callback when task errors
    * @param onProgress Callback called when processing status changed
    */
-  enqueue(
-    task: () => Promise<R>,
-    onComplete: (result: R) => void,
-    onError: (error: Error) => void,
-    onProgress: (processing: number, waiting: number) => void
-  ): void {
+  enqueue({
+    task,
+    onComplete,
+    onError,
+    onProgress,
+  }: {
+    task: () => Promise<R>;
+    onComplete: (result: R) => void;
+    onError: (error: Error) => void;
+    onProgress: (processing: number, waiting: number) => void;
+  }): void {
     this.queue.push({
       execute: task,
       onComplete,

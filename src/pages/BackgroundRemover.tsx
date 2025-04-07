@@ -1,4 +1,4 @@
-import { useState, useCallback, ChangeEvent } from "react";
+import { useState, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -26,17 +26,17 @@ export default function BackgroundRemover() {
   });
   const [loadingStatus, setLoadingStatus] = useState<string>("");
 
-  const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
+  const handleFilesAdded = (newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
-  }, []);
+  };
 
-  const handleRemoveFile = useCallback((index: number) => {
+  const handleRemoveFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  };
 
-  const handleViewDiff = useCallback((index: number) => {
+  const handleViewDiff = (index: number) => {
     setSelectedFileIndex(index);
-  }, []);
+  };
 
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
     setResizeOptions((prev) => ({
@@ -52,9 +52,90 @@ export default function BackgroundRemover() {
     }));
   };
 
-  const processImages = useCallback(async () => {
+  const processImageFile = async (imageFile: ImageFile, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: true,
+        isError: false,
+      };
+      return updatedFiles;
+    });
+
+    const { removeBackground } = await import("@imgly/background-removal");
+
+    const processedBlob = await removeBackground(imageFile.file, {
+      device: "gpu",
+      output: {
+        format: "image/png",
+        quality: 1,
+      },
+      progress: (key, current, total) => {
+        if (key.startsWith("fetch:")) {
+          const percentComplete = Math.round((current / total) * 100);
+          setLoadingStatus(
+            percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
+          );
+        }
+      },
+    });
+
+    const processedFile = new File([processedBlob], imageFile.name, {
+      type: "image/png",
+      lastModified: Date.now(),
+    });
+
+    const compressedBlob = await convertImage(
+      processedFile,
+      "png",
+      quality,
+      enableResize ? resizeOptions : undefined
+    );
+
+    const img = new Image();
+    img.src = URL.createObjectURL(compressedBlob);
+    await new Promise((resolve) => {
+      img.onload = resolve;
+    });
+
+    return {
+      ...imageFile,
+      processed: compressedBlob,
+      newWidth: img.width,
+      newHeight: img.height,
+      isProcessing: false,
+      isError: false,
+    };
+  };
+
+  const handleComplete = (result: ImageFile, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = result;
+      return updatedFiles;
+    });
+  };
+
+  const handleError = (error: Error, imageFile: ImageFile, index: number) => {
+    console.error(`Error processing image ${imageFile.name}:`, error);
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: false,
+        isError: true,
+      };
+      return updatedFiles;
+    });
+  };
+
+  const handleProgress = (processing: number, waiting: number) => {
+    setProcessingStatus({ waiting, processing });
+  };
+
+  const processImages = async () => {
     try {
-      // Create a processing queue with max 1 concurrent task
       const queue = createImageProcessingQueue<ImageFile>(1);
 
       setFiles((prevFiles) =>
@@ -64,102 +145,15 @@ export default function BackgroundRemover() {
         }))
       );
 
-      // Add all tasks to the queue
       files.forEach((imageFile, index) => {
         if (imageFile.processed) return;
 
-        queue.enqueue(
-          async () => {
-            // Mark this file as processing
-            setFiles((prevFiles) => {
-              const updatedFiles = [...prevFiles];
-              updatedFiles[index] = {
-                ...updatedFiles[index],
-                isProcessing: true,
-                isError: false,
-              };
-              return updatedFiles;
-            });
-
-            try {
-              const { removeBackground } = await import("@imgly/background-removal");
-
-              const processedBlob = await removeBackground(imageFile.file, {
-                device: "gpu",
-                output: {
-                  format: "image/png",
-                  quality: 1,
-                },
-                progress: (key, current, total) => {
-                  if (key.startsWith("fetch:")) {
-                    const percentComplete = Math.round((current / total) * 100);
-                    setLoadingStatus(
-                      percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
-                    );
-                  }
-                },
-              });
-
-              // Convert Blob to File for the convertImage function
-              const processedFile = new File([processedBlob], imageFile.name, {
-                type: "image/png",
-                lastModified: Date.now(),
-              });
-
-              // Post-process with image compression using convertImage from ImageConverter
-              const compressedBlob = await convertImage(
-                processedFile,
-                "png",
-                quality,
-                enableResize ? resizeOptions : undefined
-              );
-
-              // Calculate new dimensions
-              const img = new Image();
-              img.src = URL.createObjectURL(compressedBlob);
-              await new Promise((resolve) => {
-                img.onload = resolve;
-              });
-
-              return {
-                ...imageFile,
-                processed: compressedBlob,
-                newWidth: img.width,
-                newHeight: img.height,
-                isProcessing: false,
-                isError: false,
-              };
-            } catch (error) {
-              console.error(`Error removing background from ${imageFile.name}:`, error);
-              throw error;
-            }
-          },
-          // On complete callback
-          (result) => {
-            setFiles((prevFiles) => {
-              const updatedFiles = [...prevFiles];
-              updatedFiles[index] = result;
-              return updatedFiles;
-            });
-          },
-          // On error callback
-          (error) => {
-            console.error(`Error processing image ${imageFile.name}:`, error);
-            setFiles((prevFiles) => {
-              const updatedFiles = [...prevFiles];
-              updatedFiles[index] = {
-                ...updatedFiles[index],
-                isProcessing: false,
-                isError: true,
-              };
-              return updatedFiles;
-            });
-          },
-          // On progress callback
-          (processing, waiting) => {
-            setProcessingStatus({ waiting, processing });
-          }
-        );
+        queue.enqueue({
+          task: () => processImageFile(imageFile, index),
+          onComplete: (result) => handleComplete(result, index),
+          onError: (error) => handleError(error, imageFile, index),
+          onProgress: handleProgress,
+        });
       });
 
       setProcessingStatus({
@@ -171,9 +165,9 @@ export default function BackgroundRemover() {
     } finally {
       setLoadingStatus("");
     }
-  }, [files, quality, enableResize, resizeOptions]);
+  };
 
-  const downloadAll = useCallback(() => {
+  const downloadAll = () => {
     const filesToDownload = files
       .filter((file) => file.processed)
       .map((file) => ({
@@ -181,7 +175,7 @@ export default function BackgroundRemover() {
         filename: `${file.name.split(".")[0]}-no-bg.png`,
       }));
     downloadAllFiles(filesToDownload);
-  }, [files]);
+  };
 
   return (
     <div className="container mx-auto py-8">

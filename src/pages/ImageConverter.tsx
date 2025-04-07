@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, ChangeEvent } from "react";
+import { useState, useEffect, ChangeEvent } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Slider } from "@/components/ui/slider";
@@ -43,13 +43,13 @@ export default function ImageConverter() {
     setQuality(formatRecommendations[format].defaultQuality);
   }, [format]);
 
-  const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
+  const handleFilesAdded = (newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
-  }, []);
+  };
 
-  const handleRemoveFile = useCallback((index: number) => {
+  const handleRemoveFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  };
 
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
     setResizeOptions((prev) => ({
@@ -65,8 +65,66 @@ export default function ImageConverter() {
     }));
   };
 
-  const convertImages = useCallback(async () => {
-    // Create a processing queue with max 3 concurrent tasks
+  const processImageFile = async (imageFile: ImageFile, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: true,
+        isError: false,
+      };
+      return updatedFiles;
+    });
+
+    const processedBlob = await convertImage(
+      imageFile.file,
+      format,
+      quality,
+      enableResize ? resizeOptions : undefined
+    );
+
+    const img = new Image();
+    img.src = URL.createObjectURL(processedBlob);
+    await new Promise((resolve) => {
+      img.onload = resolve;
+    });
+
+    return {
+      ...imageFile,
+      processed: processedBlob,
+      newWidth: img.width,
+      newHeight: img.height,
+      isProcessing: false,
+      isError: false,
+    };
+  };
+
+  const handleComplete = (result: ImageFile, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = result;
+      return updatedFiles;
+    });
+  };
+
+  const handleError = (error: Error, imageFile: ImageFile, index: number) => {
+    console.error(`Error converting image ${imageFile.name}:`, error);
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: false,
+        isError: true,
+      };
+      return updatedFiles;
+    });
+  };
+
+  const handleProgress = (processing: number, waiting: number) => {
+    setProcessingStatus({ waiting, processing });
+  };
+
+  const convertImages = async () => {
     const queue = createImageProcessingQueue<ImageFile>();
 
     setFiles((prevFiles) =>
@@ -76,81 +134,24 @@ export default function ImageConverter() {
       }))
     );
 
-    // Add all tasks to the queue
     files.forEach((imageFile, index) => {
       if (imageFile.processed) return;
 
-      queue.enqueue(
-        async () => {
-          // Mark this file as processing
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = {
-              ...updatedFiles[index],
-              isProcessing: true,
-              isError: false,
-            };
-            return updatedFiles;
-          });
-
-          const processedBlob = await convertImage(
-            imageFile.file,
-            format,
-            quality,
-            enableResize ? resizeOptions : undefined
-          );
-
-          // Calculate new dimensions
-          const img = new Image();
-          img.src = URL.createObjectURL(processedBlob);
-          await new Promise((resolve) => {
-            img.onload = resolve;
-          });
-
-          return {
-            ...imageFile,
-            processed: processedBlob,
-            newWidth: img.width,
-            newHeight: img.height,
-            isProcessing: false,
-            isError: false,
-          };
-        },
-        // On complete callback
-        (result) => {
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = result;
-            return updatedFiles;
-          });
-        },
-        // On error callback
-        (error) => {
-          console.error(`Error converting image ${imageFile.name}:`, error);
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = {
-              ...updatedFiles[index],
-              isProcessing: false,
-              isError: true,
-            };
-            return updatedFiles;
-          });
-        },
-        // On progress callback
-        (processing, waiting) => {
-          setProcessingStatus({ waiting, processing });
-        }
-      );
+      queue.enqueue({
+        task: () => processImageFile(imageFile, index),
+        onComplete: (result) => handleComplete(result, index),
+        onError: (error) => handleError(error, imageFile, index),
+        onProgress: handleProgress,
+      });
     });
 
     setProcessingStatus({
       waiting: queue.waiting,
       processing: queue.active,
     });
-  }, [files, format, quality, enableResize, resizeOptions]);
+  };
 
-  const downloadAll = useCallback(() => {
+  const downloadAll = () => {
     const filesToDownload = files.filter((file) => file.processed);
     if (filesToDownload.length > 0) {
       downloadAllFiles(
@@ -160,11 +161,11 @@ export default function ImageConverter() {
         }))
       );
     }
-  }, [files, format]);
+  };
 
-  const handleViewDiff = useCallback((index: number) => {
+  const handleViewDiff = (index: number) => {
     setSelectedFileIndex(index);
-  }, []);
+  };
 
   return (
     <div className="container mx-auto py-8">

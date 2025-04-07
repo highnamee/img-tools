@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -26,7 +26,7 @@ export default function ImageMetadataRemover() {
     processing: 0,
   });
 
-  const handleFilesAdded = useCallback(async (newFiles: ImageFile[]) => {
+  const handleFilesAdded = async (newFiles: ImageFile[]) => {
     const filesWithMetadata = await Promise.all(
       newFiles.map(async (file) => {
         const { metadata, coordinates } = await extractMetadata(file.file);
@@ -39,25 +39,69 @@ export default function ImageMetadataRemover() {
     );
 
     setFiles((prev) => [...prev, ...filesWithMetadata]);
-  }, []);
+  };
 
-  const handleRemoveFile = useCallback((index: number) => {
+  const handleRemoveFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  };
 
-  const handleShowAllMetadata = useCallback((index: number) => {
+  const handleShowAllMetadata = (index: number) => {
     setSelectedFileIndex(index);
-  }, []);
+  };
 
-  const handleCloseModal = useCallback(() => {
+  const handleCloseModal = () => {
     setSelectedFileIndex(null);
-  }, []);
+  };
 
-  const processImages = useCallback(async () => {
-    // Create a processing queue with max 3 concurrent tasks
+  const processImageFile = async (file: ImageWithMetadata, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: true,
+        isError: false,
+      };
+      return updatedFiles;
+    });
+
+    const processedBlob = await removeMetadata(file.file);
+
+    return {
+      ...file,
+      processed: processedBlob,
+      isProcessing: false,
+      isError: false,
+    };
+  };
+
+  const handleComplete = (result: ImageWithMetadata, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = result;
+      return updatedFiles;
+    });
+  };
+
+  const handleError = (error: Error, file: ImageWithMetadata, index: number) => {
+    console.error(`Error processing ${file.name}:`, error);
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: false,
+        isError: true,
+      };
+      return updatedFiles;
+    });
+  };
+
+  const handleProgress = (processing: number, waiting: number) => {
+    setProcessingStatus({ waiting, processing });
+  };
+
+  const processImages = async () => {
     const queue = createImageProcessingQueue<ImageWithMetadata>();
 
-    // Mark all files as not processing yet
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
         ...file,
@@ -65,68 +109,24 @@ export default function ImageMetadataRemover() {
       }))
     );
 
-    // Add all tasks to the queue
     files.forEach((file, index) => {
       if (file.processed) return;
 
-      queue.enqueue(
-        // Task to execute
-        async () => {
-          // Mark this file as processing
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = {
-              ...updatedFiles[index],
-              isProcessing: true,
-              isError: false,
-            };
-            return updatedFiles;
-          });
-
-          const processedBlob = await removeMetadata(file.file);
-
-          return {
-            ...file,
-            processed: processedBlob,
-            isProcessing: false,
-            isError: false,
-          };
-        },
-        // On complete callback
-        (result) => {
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = result;
-            return updatedFiles;
-          });
-        },
-        // On error callback
-        (error) => {
-          console.error("Error processing image:", error);
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = {
-              ...updatedFiles[index],
-              isProcessing: false,
-              isError: true,
-            };
-            return updatedFiles;
-          });
-        },
-        // On progress callback
-        (processing, waiting) => {
-          setProcessingStatus({ waiting, processing });
-        }
-      );
+      queue.enqueue({
+        task: () => processImageFile(file, index),
+        onComplete: (result) => handleComplete(result, index),
+        onError: (error) => handleError(error, file, index),
+        onProgress: handleProgress,
+      });
     });
 
     setProcessingStatus({
       waiting: queue.waiting,
       processing: queue.active,
     });
-  }, [files]);
+  };
 
-  const downloadAll = useCallback(() => {
+  const downloadAll = () => {
     const filesToDownload = files
       .filter((file) => file.processed)
       .map((file) => ({
@@ -134,12 +134,12 @@ export default function ImageMetadataRemover() {
         filename: file.name,
       }));
     downloadAllFiles(filesToDownload);
-  }, [files]);
+  };
 
-  const openInGoogleMaps = useCallback((coordinates: { lat: number; lng: number }) => {
+  const openInGoogleMaps = (coordinates: { lat: number; lng: number }) => {
     const url = `https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}`;
     window.open(url, "_blank");
-  }, []);
+  };
 
   return (
     <div className="container mx-auto py-8">

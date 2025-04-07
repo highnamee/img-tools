@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -25,18 +25,66 @@ export default function Base64Converter() {
     processing: 0,
   });
 
-  const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
+  const handleFilesAdded = (newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
-  }, []);
+  };
 
-  const handleRemoveFile = useCallback((index: number) => {
+  const handleRemoveFile = (index: number) => {
     setFiles((prev) => prev.filter((_, i) => i !== index));
-  }, []);
+  };
 
-  const convertToBase64 = useCallback(async () => {
+  const processImageFile = async (imageFile: Base64ImageFile, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: true,
+        isError: false,
+      };
+      return updatedFiles;
+    });
+
+    const base64String = await fileToBase64(imageFile.file);
+    const htmlImgTag = createImgTagWithBase64(base64String);
+
+    return {
+      ...imageFile,
+      processed: imageFile.file,
+      base64String,
+      htmlImgTag,
+      isProcessing: false,
+      isError: false,
+    };
+  };
+
+  const handleComplete = (result: Base64ImageFile, index: number) => {
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = result;
+      return updatedFiles;
+    });
+  };
+
+  const handleError = (error: Error, imageFile: Base64ImageFile, index: number) => {
+    console.error(`Error converting ${imageFile.name} to base64:`, error);
+    setFiles((prevFiles) => {
+      const updatedFiles = [...prevFiles];
+      updatedFiles[index] = {
+        ...updatedFiles[index],
+        isProcessing: false,
+        isError: true,
+      };
+      return updatedFiles;
+    });
+  };
+
+  const handleProgress = (processing: number, waiting: number) => {
+    setProcessingStatus({ waiting, processing });
+  };
+
+  const convertToBase64 = async () => {
     if (files.length === 0) return;
 
-    // Create a processing queue with max 3 concurrent tasks
     const queue = createImageProcessingQueue<Base64ImageFile>();
 
     setFiles((prevFiles) =>
@@ -46,77 +94,30 @@ export default function Base64Converter() {
       }))
     );
 
-    // Add all tasks to the queue
     files.forEach((imageFile, index) => {
       if (imageFile.base64String) return;
 
-      queue.enqueue(
-        // Task to execute
-        async () => {
-          // Mark this file as processing
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = {
-              ...updatedFiles[index],
-              isProcessing: true,
-              isError: false,
-            };
-            return updatedFiles;
-          });
-
-          const base64String = await fileToBase64(imageFile.file);
-          const htmlImgTag = createImgTagWithBase64(base64String);
-
-          return {
-            ...imageFile,
-            processed: imageFile.file,
-            base64String,
-            htmlImgTag,
-            isProcessing: false,
-            isError: false,
-          };
-        },
-        // On complete callback
-        (result) => {
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = result;
-            return updatedFiles;
-          });
-        },
-        // On error callback
-        (error) => {
-          console.error(`Error converting ${imageFile.name} to base64:`, error);
-          setFiles((prevFiles) => {
-            const updatedFiles = [...prevFiles];
-            updatedFiles[index] = {
-              ...updatedFiles[index],
-              isProcessing: false,
-              isError: true,
-            };
-            return updatedFiles;
-          });
-        },
-        // On progress callback
-        (processing, waiting) => {
-          setProcessingStatus({ waiting, processing });
-        }
-      );
+      queue.enqueue({
+        task: () => processImageFile(imageFile, index),
+        onComplete: (result) => handleComplete(result, index),
+        onError: (error) => handleError(error, imageFile, index),
+        onProgress: handleProgress,
+      });
     });
 
     setProcessingStatus({
       waiting: queue.waiting,
       processing: queue.active,
     });
-  }, [files]);
+  };
 
-  const viewBase64Output = useCallback((index: number) => {
+  const viewBase64Output = (index: number) => {
     setSelectedFileIndex(index);
-  }, []);
+  };
 
-  const closeBase64Output = useCallback(() => {
+  const closeBase64Output = () => {
     setSelectedFileIndex(null);
-  }, []);
+  };
 
   return (
     <div className="container mx-auto py-8">
