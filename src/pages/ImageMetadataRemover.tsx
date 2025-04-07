@@ -144,16 +144,17 @@ export default function ImageMetadataRemover() {
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
-        <h1 className="text-2xl font-bold">Image Metadata Remover</h1>
+        <div>
+          <h1 className="mb-4 text-2xl font-bold">Image Metadata Remover</h1>
+          <h2 className="text-muted-foreground mb-4 text-xs">
+            View and remove metadata from your images including GPS coordinates, camera information,
+            and other sensitive data
+          </h2>
+        </div>
 
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
-          <p className="text-muted-foreground text-xs">
-            View and remove metadata from your images including GPS coordinates, camera information,
-            and other sensitive data
-          </p>
-
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-4">
               <Button

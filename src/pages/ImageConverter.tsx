@@ -169,16 +169,17 @@ export default function ImageConverter() {
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
-        <h1 className="text-2xl font-bold">Image Converter</h1>
+        <div>
+          <h1 className="mb-4 text-2xl font-bold">Image Converter</h1>
+          <h2 className="text-muted-foreground mb-4 text-xs">
+            Convert images between different formats with options to adjust quality and resize
+            dimensions
+          </h2>
+        </div>
 
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
-          <p className="text-muted-foreground text-xs">
-            Convert images between different formats with options to adjust quality and resize
-            dimensions
-          </p>
-
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap items-center gap-10">
               <div className="space-y-2">

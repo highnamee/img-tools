@@ -186,16 +186,17 @@ export default function BackgroundRemover() {
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
-        <h1 className="text-2xl font-bold">Background Remover</h1>
+        <div>
+          <h1 className="mb-4 text-2xl font-bold">Background Remover</h1>
+          <h2 className="text-muted-foreground mb-4 text-xs">
+            Remove backgrounds from your images with one click - perfect for product photos,
+            portraits, and more.
+          </h2>
+        </div>
 
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
-          <p className="text-muted-foreground text-xs">
-            Remove backgrounds from your images with one click - perfect for product photos,
-            portraits, and more.
-          </p>
-
           <div className="flex flex-col gap-6">
             <div className="flex flex-wrap items-center gap-10">
               <div className="space-y-2">

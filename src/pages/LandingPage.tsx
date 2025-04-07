@@ -1,13 +1,55 @@
-import { Link } from "react-router-dom";
 import {
   CONVERTER_PATH,
   METADATA_REMOVER_PATH,
   BASE64_CONVERTER_PATH,
   BACKGROUND_REMOVER_PATH,
 } from "@/constants/routes";
-import { Button } from "@/components/ui/button";
+import { ToolTile } from "@/components/landing-page/ToolTile";
 
 export default function LandingPage() {
+  const tools = [
+    {
+      title: "Image Converter",
+      features: [
+        "Seamlessly convert between formats: PNG, JPEG, WEBP, AVIF, BMP, TIFF",
+        "Compress and resize your images",
+        "Batch process multiple files without any limits",
+      ],
+      linkTo: CONVERTER_PATH,
+      linkText: "Try Converter",
+    },
+    {
+      title: "Metadata Remover",
+      features: [
+        "Unveil image metadata including GPS, Camera, Date taken, ...",
+        "Erase metadata instantly",
+        "Check file location on Google Maps, if available",
+      ],
+      linkTo: METADATA_REMOVER_PATH,
+      linkText: "Try Metadata Remover",
+    },
+    {
+      title: "Base64 Converter",
+      features: [
+        "Convert images in different formats to base64 encoded strings",
+        "Generate HTML img tags with base64 data",
+        "Perfect for embedding small icons directly in your code",
+      ],
+      linkTo: BASE64_CONVERTER_PATH,
+      linkText: "Try Base64 Converter",
+    },
+    {
+      title: "Background Remover",
+      features: [
+        "Remove backgrounds from batch of images with one click",
+        "All free with the best image quality",
+        "Perfect for product photos, portraits, and more",
+      ],
+      linkTo: BACKGROUND_REMOVER_PATH,
+      linkText: "Try Background Remover",
+    },
+  ];
+
   return (
     <div className="flex flex-col items-center py-12">
       <header className="mb-12 text-center">
@@ -18,63 +60,17 @@ export default function LandingPage() {
           </div>
         </h1>
         <h2 className="mx-auto mb-8 text-lg sm:text-xl">
-          <div>Transform your images effortlessly, all within your browser.</div>
-          <div>No uploads, no tracking—just pure, private image editing.</div>
+          <div>Transform your images effortlessly, all within your browser</div>
+          <div>
+            <strong>No uploads, no tracking</strong> - just pure, <strong>private</strong> image
+            editing
+          </div>
         </h2>
       </header>
       <div className="flex flex-wrap justify-center gap-10">
-        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
-          <h3 className="mb-4 text-2xl font-bold">Image Converter</h3>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>Seamlessly convert between formats: PNG, JPEG, WEBP, AVIF, BMP, TIFF</li>
-            <li>Compress and resize your images</li>
-            <li>Batch process multiple files without any limits</li>
-          </ul>
-          <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={CONVERTER_PATH} viewTransition>
-              Try Converter
-            </Link>
-          </Button>
-        </div>
-        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
-          <h3 className="mb-4 text-2xl font-bold">Metadata Remover</h3>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>Unveil image metadata including GPS, Camera, Date taken, ...</li>
-            <li>Erase metadata instantly</li>
-            <li>Check file location on Google Maps, if available</li>
-          </ul>
-          <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={METADATA_REMOVER_PATH} viewTransition>
-              Try Metadata Remover
-            </Link>
-          </Button>
-        </div>
-        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
-          <h3 className="mb-4 text-2xl font-bold">Base64 Converter</h3>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>Convert images in different formats to base64 encoded strings</li>
-            <li>Generate HTML img tags with base64 data</li>
-            <li>Perfect for embedding small icons directly in your code</li>
-          </ul>
-          <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={BASE64_CONVERTER_PATH} viewTransition>
-              Try Base64 Converter
-            </Link>
-          </Button>
-        </div>
-        <div className="w-md max-w-[90vw] rounded-lg bg-white p-6 shadow-lg">
-          <h3 className="mb-4 text-2xl font-bold">Background Remover</h3>
-          <ul className="list-disc space-y-2 pl-5">
-            <li>Remove backgrounds from batch of images with one click</li>
-            <li>All free with the best image quality</li>
-            <li>Perfect for product photos, portraits, and more</li>
-          </ul>
-          <Button variant="default" size="lg" className="mt-6 shadow-lg">
-            <Link to={BACKGROUND_REMOVER_PATH} viewTransition>
-              Try Background Remover
-            </Link>
-          </Button>
-        </div>
+        {tools.map((tool, index) => (
+          <ToolTile key={tool.title} index={index} {...tool} />
+        ))}
       </div>
     </div>
   );

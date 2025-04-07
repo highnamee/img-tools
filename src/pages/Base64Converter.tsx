@@ -121,16 +121,16 @@ export default function Base64Converter() {
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
-        <h1 className="text-2xl font-bold">Image to Base64 Converter</h1>
-
+        <div>
+          <h1 className="mb-4 text-2xl font-bold">Image to Base64 Converter</h1>
+          <h2 className="text-muted-foreground mb-4 text-xs">
+            Convert images to base64 encoded strings that can be used in HTML img tags or CSS
+            backgrounds
+          </h2>
+        </div>
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
         <div className="space-y-6">
-          <p className="text-muted-foreground text-xs">
-            Convert images to base64 encoded strings that can be used in HTML img tags or CSS
-            backgrounds
-          </p>
-
           <div className="flex flex-col gap-4">
             <div className="flex flex-wrap gap-4">
               <Button
