@@ -8,7 +8,7 @@ export const fileToBase64 = (file: File): Promise<string> => {
 };
 
 export const getMimeTypeFromBase64 = (base64String: string): string | null => {
-  const match = base64String.match(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/);
+  const match = RegExp(/^data:([a-zA-Z0-9]+\/[a-zA-Z0-9-.+]+);base64,/).exec(base64String);
   return match ? match[1] : null;
 };
 

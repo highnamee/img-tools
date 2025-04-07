@@ -1,6 +1,5 @@
-// Update Header.tsx to add the background remover navigation
 import { NavLink, Link } from "react-router-dom";
-import { cn } from "@/lib/utils";
+import { cn } from "@/utils/css";
 import {
   NavigationMenu,
   NavigationMenuContent,
