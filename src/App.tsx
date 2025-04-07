@@ -1,7 +1,6 @@
-// Update App.tsx to add the background remover route
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { Header } from "@/components/Header";
-import { Footer } from "@/components/Footer";
+import { RouterProvider, createBrowserRouter, RouteObject } from "react-router-dom";
+import Layout from "@/components/Layout";
+import ErrorPage from "@/components/ErrorPage";
 import ImageConverter from "./pages/ImageConverter";
 import ImageMetadataRemover from "./pages/ImageMetadataRemover";
 import Base64Converter from "./pages/Base64Converter";
@@ -16,24 +15,39 @@ import {
   HOME_PATH,
 } from "@/constants/routes";
 
+const routes: RouteObject[] = [
+  {
+    path: BASE_PATH,
+    element: <Layout />,
+    errorElement: <ErrorPage />,
+    children: [
+      {
+        path: HOME_PATH,
+        element: <LandingPage />,
+      },
+      {
+        path: CONVERTER_PATH,
+        element: <ImageConverter />,
+      },
+      {
+        path: METADATA_REMOVER_PATH,
+        element: <ImageMetadataRemover />,
+      },
+      {
+        path: BASE64_CONVERTER_PATH,
+        element: <Base64Converter />,
+      },
+      {
+        path: BACKGROUND_REMOVER_PATH,
+        element: <BackgroundRemover />,
+      },
+    ],
+  },
+];
+
 function App() {
-  return (
-    <BrowserRouter basename={BASE_PATH}>
-      <div className="bg-background flex min-h-screen flex-col">
-        <Header />
-        <main className="container mx-auto flex-grow px-4 py-8">
-          <Routes>
-            <Route path={HOME_PATH} element={<LandingPage />} />
-            <Route path={CONVERTER_PATH} element={<ImageConverter />} />
-            <Route path={METADATA_REMOVER_PATH} element={<ImageMetadataRemover />} />
-            <Route path={BASE64_CONVERTER_PATH} element={<Base64Converter />} />
-            <Route path={BACKGROUND_REMOVER_PATH} element={<BackgroundRemover />} />
-          </Routes>
-        </main>
-        <Footer />
-      </div>
-    </BrowserRouter>
-  );
+  const router = createBrowserRouter(routes);
+  return <RouterProvider router={router} />;
 }
 
 export default App;

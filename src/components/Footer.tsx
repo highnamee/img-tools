@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { HOME_PATH } from "@/constants/routes";
 import { version } from "../../package.json";
 
-export function Footer() {
+export default function Footer() {
   return (
     <footer className="mt-auto border-t">
       <div className="container mx-auto px-4 py-6">
