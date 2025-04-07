@@ -97,9 +97,9 @@ export class ProcessQueue<R> {
 }
 
 /**
- * Create an image processing queue with a limit of 3 concurrent operations
- * @param maxConcurrent Maximum number of concurrent operations (default: 3)
+ * Create an image processing queue with a limit of maxConcurrent concurrent operations
+ * @param maxConcurrent Maximum number of concurrent operations (default: 2)
  */
-export const createImageProcessingQueue = <R>(maxConcurrent = 3) => {
+export const createImageProcessingQueue = <R>(maxConcurrent = 2) => {
   return new ProcessQueue<R>(maxConcurrent);
 };
