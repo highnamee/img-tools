@@ -18,12 +18,10 @@ export default function Base64Converter() {
   const [files, setFiles] = useState<Base64ImageFile[]>([]);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
   const [processingStatus, setProcessingStatus] = useState<{
-    total: number;
-    completed: number;
+    waiting: number;
     processing: number;
   }>({
-    total: 0,
-    completed: 0,
+    waiting: 0,
     processing: 0,
   });
 
@@ -41,24 +39,17 @@ export default function Base64Converter() {
     // Create a processing queue with max 3 concurrent tasks
     const queue = createImageProcessingQueue<Base64ImageFile>();
 
-    // Mark all files as not processing yet
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
         ...file,
-        isProcessing: false,
         isError: false,
       }))
     );
 
-    // Set initial processing status
-    setProcessingStatus({
-      total: files.length,
-      completed: 0,
-      processing: 0,
-    });
-
     // Add all tasks to the queue
     files.forEach((imageFile, index) => {
+      if (imageFile.base64String) return;
+
       queue.enqueue(
         // Task to execute
         async () => {
@@ -72,12 +63,6 @@ export default function Base64Converter() {
             };
             return updatedFiles;
           });
-
-          // Update processing status
-          setProcessingStatus((prev) => ({
-            ...prev,
-            processing: prev.processing + 1,
-          }));
 
           const base64String = await fileToBase64(imageFile.file);
           const htmlImgTag = createImgTagWithBase64(base64String);
@@ -98,12 +83,6 @@ export default function Base64Converter() {
             updatedFiles[index] = result;
             return updatedFiles;
           });
-
-          setProcessingStatus((prev) => ({
-            ...prev,
-            completed: prev.completed + 1,
-            processing: prev.processing - 1,
-          }));
         },
         // On error callback
         (error) => {
@@ -117,14 +96,17 @@ export default function Base64Converter() {
             };
             return updatedFiles;
           });
-
-          setProcessingStatus((prev) => ({
-            ...prev,
-            completed: prev.completed + 1,
-            processing: prev.processing - 1,
-          }));
+        },
+        // On progress callback
+        (processing, waiting) => {
+          setProcessingStatus({ waiting, processing });
         }
       );
+    });
+
+    setProcessingStatus({
+      waiting: queue.waiting,
+      processing: queue.active,
     });
   }, [files]);
 
@@ -154,6 +136,7 @@ export default function Base64Converter() {
               <Button
                 onClick={convertToBase64}
                 disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+                className="w-32"
               >
                 {processingStatus.processing > 0 ? `Converting...` : "Convert Images"}
               </Button>
@@ -166,17 +149,18 @@ export default function Base64Converter() {
               </Button>
             </div>
 
-            {processingStatus.processing > 0 && (
-              <div className="text-muted-foreground text-xs">
-                Processing {processingStatus.processing} images in parallel (completed{" "}
-                {processingStatus.completed} of {processingStatus.total})
-              </div>
-            )}
+            <div className="text-muted-foreground text-xs">
+              {`${files.length} Uploaded `}
+              {processingStatus.processing > 0 &&
+                `• Processing ${processingStatus.processing} images`}
+              {processingStatus.waiting > 0 &&
+                `• ${processingStatus.waiting} images are waiting to be processed`}
+            </div>
           </div>
         </div>
 
         {files.length > 0 && (
-          <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
             {files.map((file, fileIndex) => (
               <ImagePreview
                 key={file.name + file.preview}
@@ -185,18 +169,16 @@ export default function Base64Converter() {
                 onRemove={() => handleRemoveFile(fileIndex)}
                 hideDownload={true}
                 extraData={
-                  <div className="space-y-0.5">
-                    {file.base64String && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => viewBase64Output(fileIndex)}
-                      >
-                        View Base64
-                      </Button>
-                    )}
-                  </div>
+                  file.base64String && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => viewBase64Output(fileIndex)}
+                    >
+                      View Base64
+                    </Button>
+                  )
                 }
               />
             ))}
@@ -204,14 +186,13 @@ export default function Base64Converter() {
         )}
 
         {selectedFileIndex !== null &&
-          files[selectedFileIndex] &&
-          files[selectedFileIndex].base64String &&
-          files[selectedFileIndex].htmlImgTag && (
+          files[selectedFileIndex]?.base64String &&
+          files[selectedFileIndex]?.htmlImgTag && (
             <Base64Modal
               isOpen={true}
               onClose={closeBase64Output}
-              base64String={files[selectedFileIndex].base64String!}
-              htmlImgTag={files[selectedFileIndex].htmlImgTag!}
+              base64String={files[selectedFileIndex].base64String}
+              htmlImgTag={files[selectedFileIndex].htmlImgTag}
               fileName={files[selectedFileIndex].name}
               originalSize={files[selectedFileIndex].file.size}
             />

@@ -4,6 +4,7 @@ import { Card } from "@/components/ui/card";
 import { Loader2 } from "lucide-react";
 import { ReactNode } from "react";
 import { Badge } from "@/components/ui/badge";
+import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 
 interface ImagePreviewProps {
   readonly file: ImageFile;
@@ -11,6 +12,8 @@ interface ImagePreviewProps {
   readonly onRemove: () => void;
   readonly extraData?: ReactNode;
   readonly hideDownload?: boolean;
+  readonly showSizeInfo?: boolean;
+  readonly showDimensionsInfo?: boolean;
 }
 
 export function ImagePreview({
@@ -19,6 +22,8 @@ export function ImagePreview({
   onRemove,
   extraData,
   hideDownload,
+  showSizeInfo = true,
+  showDimensionsInfo = true,
 }: Readonly<ImagePreviewProps>) {
   const handleDownload = () => {
     if (file.processed) {
@@ -71,6 +76,21 @@ export function ImagePreview({
           {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
         </p>
         <Badge className={badgeColor}>{badgeText}</Badge>
+        {showSizeInfo && (
+          <p className="text-muted-foreground text-xs">
+            {file.processed
+              ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.processed.size)}`
+              : formatFileSize(file.file.size)}
+          </p>
+        )}
+        {showDimensionsInfo && file.originalWidth && file.originalHeight && (
+          <p className="text-muted-foreground text-xs">
+            <span>{formatDimensions(file.originalWidth, file.originalHeight)} </span>
+            {file.newWidth && file.newHeight && (
+              <span> → {formatDimensions(file.newWidth, file.newHeight)}</span>
+            )}
+          </p>
+        )}
         {extraData}
       </div>
     </Card>

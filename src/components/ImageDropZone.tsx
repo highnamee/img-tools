@@ -2,9 +2,9 @@ import { useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ImageFile, createImageFile } from "@/services/imageService";
 
-interface ImageDropZoneProps {
+type ImageDropZoneProps = {
   onFilesAdded: (files: ImageFile[]) => void;
-}
+};
 
 export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
   const [isDragging, setIsDragging] = useState(false);
@@ -19,24 +19,48 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
     setIsDragging(false);
   }, []);
 
+  const processAddedFiles = useCallback(
+    async (rawFiles: File[]) => {
+      const imageFiles = rawFiles.map(createImageFile);
+
+      const filesWithDimensions = await Promise.all(
+        imageFiles.map(async (file) => {
+          // Get dimensions
+          const img = new Image();
+          img.src = file.preview;
+          await new Promise((resolve) => {
+            img.onload = resolve;
+          });
+
+          return {
+            ...file,
+            originalWidth: img.width,
+            originalHeight: img.height,
+          };
+        })
+      );
+
+      onFilesAdded(filesWithDimensions);
+    },
+    [onFilesAdded]
+  );
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault();
       setIsDragging(false);
       const droppedFiles = Array.from(e.dataTransfer.files);
-      const imageFiles = droppedFiles.map(createImageFile);
-      onFilesAdded(imageFiles);
+      processAddedFiles(droppedFiles);
     },
-    [onFilesAdded]
+    [processAddedFiles]
   );
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const selectedFiles = Array.from(e.target.files || []);
-      const imageFiles = selectedFiles.map(createImageFile);
-      onFilesAdded(imageFiles);
+      processAddedFiles(selectedFiles);
     },
-    [onFilesAdded]
+    [processAddedFiles]
   );
 
   return (

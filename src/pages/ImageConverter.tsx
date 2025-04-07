@@ -21,7 +21,6 @@ import {
   ResizeOptions,
 } from "@/services/imageService";
 import { downloadAllFiles } from "@/services/fileService";
-import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { createImageProcessingQueue } from "@/services/queueService";
 
@@ -33,12 +32,10 @@ export default function ImageConverter() {
   const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
   const [processingStatus, setProcessingStatus] = useState<{
-    total: number;
-    completed: number;
+    waiting: number;
     processing: number;
   }>({
-    total: 0,
-    completed: 0,
+    waiting: 0,
     processing: 0,
   });
 
@@ -47,22 +44,7 @@ export default function ImageConverter() {
   }, [format]);
 
   const handleFilesAdded = useCallback((newFiles: ImageFile[]) => {
-    const filesWithDimensions = newFiles.map(async (file) => {
-      const img = new Image();
-      img.src = file.preview;
-      await new Promise((resolve) => {
-        img.onload = resolve;
-      });
-      return {
-        ...file,
-        originalWidth: img.width,
-        originalHeight: img.height,
-      };
-    });
-
-    Promise.all(filesWithDimensions).then((files) => {
-      setFiles((prev) => [...prev, ...files]);
-    });
+    setFiles((prev) => [...prev, ...newFiles]);
   }, []);
 
   const handleRemoveFile = useCallback((index: number) => {
@@ -87,26 +69,18 @@ export default function ImageConverter() {
     // Create a processing queue with max 3 concurrent tasks
     const queue = createImageProcessingQueue<ImageFile>();
 
-    // Mark all files as processing
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
         ...file,
-        isProcessing: false,
         isError: false,
       }))
     );
 
-    // Set initial processing status
-    setProcessingStatus({
-      total: files.length,
-      completed: 0,
-      processing: 0,
-    });
-
     // Add all tasks to the queue
     files.forEach((imageFile, index) => {
+      if (imageFile.processed) return;
+
       queue.enqueue(
-        // Task to execute
         async () => {
           // Mark this file as processing
           setFiles((prevFiles) => {
@@ -118,12 +92,6 @@ export default function ImageConverter() {
             };
             return updatedFiles;
           });
-
-          // Update processing status
-          setProcessingStatus((prev) => ({
-            ...prev,
-            processing: prev.processing + 1,
-          }));
 
           const processedBlob = await convertImage(
             imageFile.file,
@@ -155,12 +123,6 @@ export default function ImageConverter() {
             updatedFiles[index] = result;
             return updatedFiles;
           });
-
-          setProcessingStatus((prev) => ({
-            ...prev,
-            completed: prev.completed + 1,
-            processing: prev.processing - 1,
-          }));
         },
         // On error callback
         (error) => {
@@ -174,14 +136,17 @@ export default function ImageConverter() {
             };
             return updatedFiles;
           });
-
-          setProcessingStatus((prev) => ({
-            ...prev,
-            completed: prev.completed + 1,
-            processing: prev.processing - 1,
-          }));
+        },
+        // On progress callback
+        (processing, waiting) => {
+          setProcessingStatus({ waiting, processing });
         }
       );
+    });
+
+    setProcessingStatus({
+      waiting: queue.waiting,
+      processing: queue.active,
     });
   }, [files, format, quality, enableResize, resizeOptions]);
 
@@ -299,6 +264,7 @@ export default function ImageConverter() {
               <Button
                 onClick={convertImages}
                 disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+                className="w-32"
               >
                 {processingStatus.processing > 0 ? `Converting...` : "Convert Images"}
               </Button>
@@ -318,12 +284,13 @@ export default function ImageConverter() {
               </Button>
             </div>
 
-            {processingStatus.processing > 0 && (
-              <div className="text-muted-foreground text-xs">
-                Processing {processingStatus.processing} images in parallel (completed{" "}
-                {processingStatus.completed} of {processingStatus.total})
-              </div>
-            )}
+            <div className="text-muted-foreground text-xs">
+              {`${files.length} Uploaded `}
+              {processingStatus.processing > 0 &&
+                `• Processing ${processingStatus.processing} images`}
+              {processingStatus.waiting > 0 &&
+                `• ${processingStatus.waiting} images are waiting to be processed`}
+            </div>
           </div>
         </div>
 
@@ -336,51 +303,32 @@ export default function ImageConverter() {
                 format={format}
                 onRemove={() => handleRemoveFile(fileIndex)}
                 extraData={
-                  <div className="space-y-0.5">
-                    <p className="text-muted-foreground text-xs">
-                      {file.processed
-                        ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.processed.size)}`
-                        : formatFileSize(file.file.size)}
-                    </p>
-                    {file.originalWidth && file.originalHeight && (
-                      <p className="text-muted-foreground text-xs">
-                        <span>{formatDimensions(file.originalWidth, file.originalHeight)} </span>
-                        {file.newWidth && file.newHeight && (
-                          <span> → {formatDimensions(file.newWidth, file.newHeight)}</span>
-                        )}
-                      </p>
-                    )}
-                    {file.processed && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-2"
-                        onClick={() => handleViewDiff(fileIndex)}
-                      >
-                        View Diff
-                      </Button>
-                    )}
-                  </div>
+                  file.processed && (
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-2"
+                      onClick={() => handleViewDiff(fileIndex)}
+                    >
+                      View Diff
+                    </Button>
+                  )
                 }
               />
             ))}
           </div>
         )}
 
-        {selectedFileIndex !== null && files[selectedFileIndex] && (
+        {selectedFileIndex !== null && files[selectedFileIndex]?.processed && (
           <ImageDiffModal
             isOpen={true}
             onClose={() => setSelectedFileIndex(null)}
             originalSrc={files[selectedFileIndex].preview}
-            processedSrc={
-              files[selectedFileIndex].processed
-                ? URL.createObjectURL(files[selectedFileIndex].processed)
-                : ""
-            }
-            originalWidth={files[selectedFileIndex].originalWidth || 0}
-            originalHeight={files[selectedFileIndex].originalHeight || 0}
-            newWidth={files[selectedFileIndex].newWidth || 0}
-            newHeight={files[selectedFileIndex].newHeight || 0}
+            processedSrc={URL.createObjectURL(files[selectedFileIndex].processed)}
+            originalWidth={files[selectedFileIndex].originalWidth ?? 0}
+            originalHeight={files[selectedFileIndex].originalHeight ?? 0}
+            newWidth={files[selectedFileIndex].newWidth ?? 0}
+            newHeight={files[selectedFileIndex].newHeight ?? 0}
           />
         )}
       </Card>

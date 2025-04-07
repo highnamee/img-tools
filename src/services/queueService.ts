@@ -2,6 +2,7 @@ type Task<R> = {
   execute: () => Promise<R>;
   onComplete: (result: R) => void;
   onError: (error: Error) => void;
+  onProgress: (processing: number, waiting: number) => void;
 };
 
 /**
@@ -21,16 +22,19 @@ export class ProcessQueue<R> {
    * @param task The task to execute
    * @param onComplete Callback when task completes successfully
    * @param onError Callback when task errors
+   * @param onProgress Callback called when processing status changed
    */
   enqueue(
     task: () => Promise<R>,
     onComplete: (result: R) => void,
-    onError: (error: Error) => void
+    onError: (error: Error) => void,
+    onProgress: (processing: number, waiting: number) => void
   ): void {
     this.queue.push({
       execute: task,
       onComplete,
       onError,
+      onProgress,
     });
 
     this.processNext();
@@ -48,6 +52,7 @@ export class ProcessQueue<R> {
     if (!task) return;
 
     this.processing++;
+    task.onProgress(this.processing, this.waiting);
 
     task
       .execute()
@@ -59,6 +64,7 @@ export class ProcessQueue<R> {
       })
       .finally(() => {
         this.processing--;
+        task.onProgress(this.processing, this.waiting);
         this.processNext();
       });
   }
