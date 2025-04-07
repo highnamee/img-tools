@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageFile, ConversionFormat, downloadImage } from "@/services/imageService";
 import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
+import { cn } from "@/utils/css";
 
 interface ImagePreviewProps {
   readonly file: ImageFile;
@@ -77,7 +78,7 @@ export function ImagePreview({
         <p className="truncate text-sm font-medium">
           {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
         </p>
-        <Badge className={badgeColor}>{badgeText}</Badge>
+        <Badge className={cn(badgeColor, "rounded-sm")}>{badgeText}</Badge>
         {showSizeInfo && (
           <p className="text-muted-foreground text-xs">
             {file.processed

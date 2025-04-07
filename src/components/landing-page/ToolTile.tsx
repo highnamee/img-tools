@@ -29,9 +29,13 @@ export function ToolTile({ index, title, features, linkTo, linkText }: ToolTileP
 
   return (
     <div
-      className={`w-[480px] max-w-[90vw] rounded-lg bg-white p-6 shadow-lg transition-all duration-600 ease-in-out ${
+      className={`w-[480px] max-w-[90vw] rounded-lg bg-white p-6 transition-all duration-600 ease-in-out ${
         isVisible ? "scale-100 opacity-100" : "scale-70 opacity-0"
       }`}
+      style={{
+        boxShadow:
+          "0px 2px 3px -1px rgba(0,0,0,0.1), 0px 1px 0px 0px rgba(25,28,33,0.02), 0px 0px 0px 1px rgba(25,28,33,0.08)",
+      }}
     >
       <h3 className="mb-4 text-2xl font-bold">{title}</h3>
       <ul className="list-disc space-y-2 pl-5">
@@ -39,11 +43,11 @@ export function ToolTile({ index, title, features, linkTo, linkText }: ToolTileP
           <li key={i}>{feature}</li>
         ))}
       </ul>
-      <Button variant="default" size="lg" className="mt-6 shadow-lg">
-        <Link to={linkTo} viewTransition>
+      <Link className="mt-6 flex" to={linkTo} viewTransition>
+        <Button variant="default" size="lg" className="w-52 shadow-lg">
           {linkText}
-        </Link>
-      </Button>
+        </Button>
+      </Link>
     </div>
   );
 }

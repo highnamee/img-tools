@@ -178,6 +178,19 @@ export default function BackgroundRemover() {
     downloadAllFiles(filesToDownload);
   };
 
+  const resetAllFiles = () => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        processed: undefined,
+        isProcessing: false,
+        isError: false,
+        newWidth: undefined,
+        newHeight: undefined,
+      }))
+    );
+  };
+
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
@@ -259,6 +272,9 @@ export default function BackgroundRemover() {
                 variant="outline"
               >
                 Download All
+              </Button>
+              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
+                Reset All
               </Button>
               <Button
                 onClick={() => setFiles([])}

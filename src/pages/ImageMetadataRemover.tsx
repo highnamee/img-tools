@@ -142,6 +142,21 @@ export default function ImageMetadataRemover() {
     window.open(url, "_blank");
   };
 
+  const resetAllFiles = () => {
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        processed: undefined,
+        isProcessing: false,
+        isError: false,
+        newWidth: undefined,
+        newHeight: undefined,
+        metadata: undefined,
+        coordinates: undefined,
+      }))
+    );
+  };
+
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
@@ -171,6 +186,9 @@ export default function ImageMetadataRemover() {
                 variant="outline"
               >
                 Download All
+              </Button>
+              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
+                Reset All
               </Button>
               <Button
                 onClick={() => setFiles([])}
