@@ -1,9 +1,11 @@
 import { useState, useEffect, ChangeEvent } from "react";
+
+import { ImageDiffModal } from "@/components/ImageDiffModal";
+import { ImageDropZone } from "@/components/ImageDropZone";
+import { ImagePreview } from "@/components/ImagePreview";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
 import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
 import {
   Select,
   SelectContent,
@@ -11,8 +13,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ImageDropZone } from "@/components/ImageDropZone";
-import { ImagePreview } from "@/components/ImagePreview";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { downloadAllFiles } from "@/services/fileService";
 import {
   ImageFile,
   ConversionFormat,
@@ -20,8 +23,6 @@ import {
   formatRecommendations,
   ResizeOptions,
 } from "@/services/imageService";
-import { downloadAllFiles } from "@/services/fileService";
-import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function ImageConverter() {

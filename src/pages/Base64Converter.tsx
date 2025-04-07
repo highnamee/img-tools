@@ -1,13 +1,14 @@
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+
+import { Base64Modal } from "@/components/Base64Modal";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
-import { ImageFile } from "@/services/imageService";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 import { fileToBase64, createImgTagWithBase64 } from "@/services/base64Service";
-import { Base64Modal } from "@/components/Base64Modal";
-import { extractImageFormat } from "@/utils/imageUtils";
+import { ImageFile } from "@/services/imageService";
 import { createImageProcessingQueue } from "@/services/queueService";
+import { extractImageFormat } from "@/utils/imageUtils";
 
 interface Base64ImageFile extends ImageFile {
   base64String?: string;

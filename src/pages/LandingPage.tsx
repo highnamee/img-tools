@@ -1,10 +1,10 @@
+import { ToolTile } from "@/components/landing-page/ToolTile";
 import {
   CONVERTER_PATH,
   METADATA_REMOVER_PATH,
   BASE64_CONVERTER_PATH,
   BACKGROUND_REMOVER_PATH,
 } from "@/constants/routes";
-import { ToolTile } from "@/components/landing-page/ToolTile";
 
 export default function LandingPage() {
   const tools = [

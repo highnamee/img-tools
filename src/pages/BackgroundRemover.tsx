@@ -1,14 +1,15 @@
 import { useState, ChangeEvent } from "react";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
-import { Slider } from "@/components/ui/slider";
-import { Input } from "@/components/ui/input";
-import { Switch } from "@/components/ui/switch";
+
+import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
-import { ImageFile, convertImage, ResizeOptions } from "@/services/imageService";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
 import { downloadAllFiles } from "@/services/fileService";
-import { ImageDiffModal } from "@/components/ImageDiffModal";
+import { ImageFile, convertImage, ResizeOptions } from "@/services/imageService";
 import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function BackgroundRemover() {

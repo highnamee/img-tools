@@ -1,7 +1,7 @@
+import { CopyButton } from "@/components/ui/copy-button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Textarea } from "@/components/ui/textarea";
-import { CopyButton } from "@/components/ui/copy-button";
 import { formatFileSize } from "@/utils/formatUtils";
 
 interface Base64ModalProps {

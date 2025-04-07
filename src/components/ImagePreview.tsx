@@ -1,9 +1,11 @@
-import { ImageFile, ConversionFormat, downloadImage } from "@/services/imageService";
+import { ReactNode } from "react";
+
+import { Loader2 } from "lucide-react";
+
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Loader2 } from "lucide-react";
-import { ReactNode } from "react";
-import { Badge } from "@/components/ui/badge";
+import { ImageFile, ConversionFormat, downloadImage } from "@/services/imageService";
 import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 
 interface ImagePreviewProps {

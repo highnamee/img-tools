@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
-import { cn } from "@/utils/css";
+
 import { ImageFile, createImageFile } from "@/services/imageService";
+import { cn } from "@/utils/css";
 
 type ImageDropZoneProps = {
   onFilesAdded: (files: ImageFile[]) => void;

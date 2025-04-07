@@ -1,6 +1,9 @@
 import { Link } from "react-router-dom";
+
 import { HOME_PATH } from "@/constants/routes";
+
 import { version } from "../../package.json";
+
 
 export default function Footer() {
   return (

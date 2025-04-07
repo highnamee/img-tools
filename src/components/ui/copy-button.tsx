@@ -1,5 +1,7 @@
 import { useState, useCallback, useEffect } from "react";
+
 import { Check, Copy } from "lucide-react";
+
 import { Button } from "@/components/ui/button";
 
 interface CopyButtonProps {

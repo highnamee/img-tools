@@ -1,14 +1,15 @@
 import { useState } from "react";
+
+import { ImageDropZone } from "@/components/ImageDropZone";
+import { ImageMetadataModal } from "@/components/ImageMetadataModal";
+import { ImagePreview } from "@/components/ImagePreview";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { ImageDropZone } from "@/components/ImageDropZone";
-import { ImagePreview } from "@/components/ImagePreview";
-import { ImageMetadataModal } from "@/components/ImageMetadataModal";
+import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile } from "@/services/imageService";
 import { MetadataField, extractMetadata, removeMetadata } from "@/services/metadataService";
-import { downloadAllFiles } from "@/services/fileService";
-import { extractImageFormat } from "@/utils/imageUtils";
 import { createImageProcessingQueue } from "@/services/queueService";
+import { extractImageFormat } from "@/utils/imageUtils";
 
 interface ImageWithMetadata extends ImageFile {
   metadata?: MetadataField[];

@@ -1,11 +1,8 @@
 import { RouterProvider, createBrowserRouter, RouteObject } from "react-router-dom";
-import Layout from "@/components/Layout";
+
+
 import ErrorPage from "@/components/ErrorPage";
-import ImageConverter from "./pages/ImageConverter";
-import ImageMetadataRemover from "./pages/ImageMetadataRemover";
-import Base64Converter from "./pages/Base64Converter";
-import BackgroundRemover from "./pages/BackgroundRemover";
-import LandingPage from "./pages/LandingPage";
+import Layout from "@/components/Layout";
 import {
   BASE_PATH,
   CONVERTER_PATH,
@@ -14,6 +11,13 @@ import {
   BACKGROUND_REMOVER_PATH,
   HOME_PATH,
 } from "@/constants/routes";
+
+import BackgroundRemover from "./pages/BackgroundRemover";
+import Base64Converter from "./pages/Base64Converter";
+import ImageConverter from "./pages/ImageConverter";
+import ImageMetadataRemover from "./pages/ImageMetadataRemover";
+import LandingPage from "./pages/LandingPage";
+
 
 const routes: RouteObject[] = [
   {
