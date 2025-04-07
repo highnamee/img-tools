@@ -24,8 +24,8 @@ export const formatRecommendations: Record<
   ConversionFormat,
   { defaultQuality: number; description: string }
 > = {
-  png: { defaultQuality: 80, description: "Good for images with transparency" },
   jpeg: { defaultQuality: 85, description: "Best for photos and complex images" },
+  png: { defaultQuality: 80, description: "Good for images with transparency" },
   webp: { defaultQuality: 80, description: "Modern format with good compression" },
   avif: { defaultQuality: 75, description: "Advanced format with excellent compression" },
   bmp: { defaultQuality: 100, description: "Uncompressed format, not recommended" },
@@ -39,17 +39,23 @@ export const createImageFile = (file: File): ImageFile => ({
 });
 
 export const convertImage = async (
-  file: File,
+  imageFile: ImageFile,
   format: ConversionFormat,
   quality: number,
   resizeOptions?: ResizeOptions
 ): Promise<Blob> => {
+  const { file, originalWidth, originalHeight } = imageFile;
+
   if (format === "bmp" || format === "tiff") {
     return file;
   }
 
+  if (!originalWidth || !originalHeight) {
+    console.error("Original dimensions not available, cannot resize properly");
+    return file;
+  }
+
   const options: Options = {
-    maxSizeMB: 1,
     useWebWorker: true,
     fileType: `image/${format}`,
     initialQuality: quality / 100,
@@ -57,7 +63,14 @@ export const convertImage = async (
   };
 
   if (resizeOptions) {
-    options.maxWidthOrHeight = resizeOptions.width ?? resizeOptions.height;
+    const { width, height } = resizeOptions;
+    const ratio = originalWidth / originalHeight;
+
+    if (width) {
+      options.maxWidthOrHeight = originalWidth > originalHeight ? width : width / ratio;
+    } else if (height) {
+      options.maxWidthOrHeight = originalWidth > originalHeight ? height * ratio : height;
+    }
   } else {
     options.alwaysKeepResolution = true;
   }
@@ -85,4 +98,14 @@ export const downloadImage = (blob: Blob, filename: string, format: ConversionFo
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);
+};
+
+export const getImageSize = async (file: Blob) => {
+  const img = new Image();
+  img.src = URL.createObjectURL(file);
+  await new Promise((resolve) => {
+    img.onload = resolve;
+  });
+
+  return { width: img.width, height: img.height };
 };

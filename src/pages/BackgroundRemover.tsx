@@ -9,7 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { downloadAllFiles } from "@/services/fileService";
-import { ImageFile, convertImage, ResizeOptions } from "@/services/imageService";
+import { ImageFile, convertImage, ResizeOptions, getImageSize } from "@/services/imageService";
 import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function BackgroundRemover() {
@@ -40,16 +40,16 @@ export default function BackgroundRemover() {
   };
 
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResizeOptions((prev) => ({
-      ...prev,
+    setResizeOptions(() => ({
+      height: 0,
       width: e.target.value ? parseInt(e.target.value) : 0,
     }));
   };
 
   const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResizeOptions((prev) => ({
-      ...prev,
+    setResizeOptions(() => ({
       height: e.target.value ? parseInt(e.target.value) : 0,
+      width: 0,
     }));
   };
 
@@ -82,10 +82,13 @@ export default function BackgroundRemover() {
       },
     });
 
-    const processedFile = new File([processedBlob], imageFile.name, {
-      type: "image/png",
-      lastModified: Date.now(),
-    });
+    const processedFile = {
+      ...imageFile,
+      file: new File([processedBlob], imageFile.name, {
+        type: "image/png",
+        lastModified: Date.now(),
+      }),
+    };
 
     const compressedBlob = await convertImage(
       processedFile,
@@ -94,17 +97,13 @@ export default function BackgroundRemover() {
       enableResize ? resizeOptions : undefined
     );
 
-    const img = new Image();
-    img.src = URL.createObjectURL(compressedBlob);
-    await new Promise((resolve) => {
-      img.onload = resolve;
-    });
+    const { width: newWidth, height: newHeight } = await getImageSize(compressedBlob);
 
     return {
       ...imageFile,
       processed: compressedBlob,
-      newWidth: img.width,
-      newHeight: img.height,
+      newWidth,
+      newHeight,
       isProcessing: false,
       isError: false,
     };

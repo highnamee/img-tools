@@ -22,6 +22,7 @@ import {
   convertImage,
   formatRecommendations,
   ResizeOptions,
+  getImageSize,
 } from "@/services/imageService";
 import { createImageProcessingQueue } from "@/services/queueService";
 
@@ -53,16 +54,16 @@ export default function ImageConverter() {
   };
 
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResizeOptions((prev) => ({
-      ...prev,
+    setResizeOptions(() => ({
+      height: 0,
       width: e.target.value ? parseInt(e.target.value) : 0,
     }));
   };
 
   const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResizeOptions((prev) => ({
-      ...prev,
+    setResizeOptions(() => ({
       height: e.target.value ? parseInt(e.target.value) : 0,
+      width: 0,
     }));
   };
 
@@ -78,23 +79,19 @@ export default function ImageConverter() {
     });
 
     const processedBlob = await convertImage(
-      imageFile.file,
+      imageFile,
       format,
       quality,
       enableResize ? resizeOptions : undefined
     );
 
-    const img = new Image();
-    img.src = URL.createObjectURL(processedBlob);
-    await new Promise((resolve) => {
-      img.onload = resolve;
-    });
+    const { width: newWidth, height: newHeight } = await getImageSize(processedBlob);
 
     return {
       ...imageFile,
       processed: processedBlob,
-      newWidth: img.width,
-      newHeight: img.height,
+      newWidth,
+      newHeight,
       isProcessing: false,
       isError: false,
     };
@@ -207,8 +204,8 @@ export default function ImageConverter() {
                     <SelectValue placeholder="Select format" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="png">PNG</SelectItem>
                     <SelectItem value="jpeg">JPEG</SelectItem>
+                    <SelectItem value="png">PNG</SelectItem>
                     <SelectItem value="webp">WebP</SelectItem>
                     <SelectItem value="avif">AVIF</SelectItem>
                     <SelectItem value="gif">GIF</SelectItem>
