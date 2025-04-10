@@ -54,9 +54,9 @@ export default function LandingPage() {
     <div className="flex flex-col items-center py-12">
       <header className="mb-12 text-center">
         <h1 className="mb-16 font-extrabold">
-          <div className="mb-4 text-3xl sm:text-4xl">Say Hello to</div>
+          <div className="mb-10 text-3xl sm:text-4xl">Say Hello to</div>
           <div className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-5xl text-transparent sm:text-7xl">
-            IMG TOOLS
+            PRIVATE IMG TOOLS
           </div>
         </h1>
         <h2 className="mx-auto mb-8 text-lg sm:text-xl">

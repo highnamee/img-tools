@@ -30,7 +30,7 @@ export default function Header() {
                   className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent"
                   viewTransition
                 >
-                  IMG TOOLS
+                  P.I.T
                 </Link>
               </NavigationMenuTrigger>
               <NavigationMenuContent>
@@ -91,7 +91,7 @@ export default function Header() {
             <NavigationMenuItem className="hidden lg:flex">
               <Link to={HOME_PATH} className="flex items-center gap-2">
                 <span className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-2xl font-bold text-transparent">
-                  IMG TOOLS
+                  P.I.T
                 </span>
               </Link>
             </NavigationMenuItem>

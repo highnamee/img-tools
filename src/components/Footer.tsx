@@ -4,7 +4,6 @@ import { HOME_PATH } from "@/constants/routes";
 
 import { version } from "../../package.json";
 
-
 export default function Footer() {
   return (
     <footer className="mt-auto border-t">
@@ -15,12 +14,12 @@ export default function Footer() {
               to={HOME_PATH}
               className="from-primary to-primary/70 bg-gradient-to-r bg-clip-text text-xl font-bold text-transparent"
             >
-              IMG TOOLS
+              P.I.T
             </Link>
             <span className="text-muted-foreground ml-2 text-xs">Version: {version}</span>
           </div>
           <div className="text-muted-foreground text-sm">
-            © {new Date().getFullYear()} IMG TOOLS. All rights reserved.
+            © {new Date().getFullYear()} PRIVATE IMG TOOLS. All rights reserved.
           </div>
         </div>
       </div>
