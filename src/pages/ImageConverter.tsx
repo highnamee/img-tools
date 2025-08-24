@@ -246,22 +246,29 @@ export default function ImageConverter() {
                   </label>
                 </div>
                 {enableResize && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Width"
-                      value={resizeOptions.width || ""}
-                      onChange={handleWidthChange}
-                      className="w-28"
-                    />
-                    <span className="text-muted-foreground">or</span>
-                    <Input
-                      type="number"
-                      placeholder="Height"
-                      value={resizeOptions.height || ""}
-                      onChange={handleHeightChange}
-                      className="w-28"
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Width (leave blank to auto-calc height)"
+                        value={resizeOptions.width || ""}
+                        onChange={handleWidthChange}
+                        className="w-28"
+                        disabled={!!resizeOptions.height}
+                      />
+                      <span className="text-muted-foreground">or</span>
+                      <Input
+                        type="number"
+                        placeholder="Height (leave blank to auto-calc width)"
+                        value={resizeOptions.height || ""}
+                        onChange={handleHeightChange}
+                        className="w-28"
+                        disabled={!!resizeOptions.width}
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground">
+                      Enter either width or height; the other dimension will be calculated automatically to maintain aspect ratio.
+                    </p>
                   </div>
                 )}
               </div>
