@@ -213,6 +213,9 @@ export default function ImageConverter() {
                     <SelectItem value="tiff">TIFF</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-muted-foreground text-xs">
+                  {formatRecommendations[format].description}
+                </p>
               </div>
 
               <div className="space-y-2">
@@ -266,7 +269,7 @@ export default function ImageConverter() {
                         disabled={!!resizeOptions.width}
                       />
                     </div>
-                    <p className="text-muted-foreground text-xs">
+                    <p className="text-muted-foreground max-w-100 text-xs">
                       Enter <strong>either width or height</strong>. The other dimension will be
                       calculated automatically to maintain aspect ratio.
                     </p>
@@ -274,10 +277,6 @@ export default function ImageConverter() {
                 )}
               </div>
             </div>
-
-            <p className="text-muted-foreground text-xs">
-              {formatRecommendations[format].description}
-            </p>
           </div>
 
           <div className="flex flex-col gap-4">
