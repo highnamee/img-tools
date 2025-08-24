@@ -96,12 +96,14 @@ export default function Base64Converter() {
     );
 
     files.forEach((imageFile, index) => {
-      queue.enqueue({
-        task: () => processImageFile(imageFile, index),
-        onComplete: (result) => handleComplete(result, index),
-        onError: (error) => handleError(error, imageFile, index),
-        onProgress: handleProgress,
-      });
+      if (!imageFile.processed) {
+        queue.enqueue({
+          task: () => processImageFile(imageFile, index),
+          onComplete: (result) => handleComplete(result, index),
+          onError: (error) => handleError(error, imageFile, index),
+          onProgress: handleProgress,
+        });
+      }
     });
 
     setProcessingStatus({

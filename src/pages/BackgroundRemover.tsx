@@ -12,8 +12,16 @@ import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile, convertImage, ResizeOptions, getImageSize } from "@/services/imageService";
 import { createImageProcessingQueue } from "@/services/queueService";
 
+interface BackgroundImageFile extends ImageFile {
+  processedSettings?: {
+    quality: number;
+    enableResize: boolean;
+    resizeOptions: ResizeOptions;
+  };
+}
+
 export default function BackgroundRemover() {
-  const [files, setFiles] = useState<ImageFile[]>([]);
+  const [files, setFiles] = useState<BackgroundImageFile[]>([]);
   const [quality, setQuality] = useState<number>(80);
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
@@ -53,7 +61,10 @@ export default function BackgroundRemover() {
     }));
   };
 
-  const processImageFile = async (imageFile: ImageFile, index: number) => {
+  const processImageFile = async (
+    imageFile: BackgroundImageFile,
+    index: number
+  ) => {
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
       updatedFiles[index] = {
@@ -106,10 +117,15 @@ export default function BackgroundRemover() {
       newHeight,
       isProcessing: false,
       isError: false,
+      processedSettings: {
+        quality,
+        enableResize,
+        resizeOptions: enableResize ? resizeOptions : { width: 0, height: 0 },
+      },
     };
   };
 
-  const handleComplete = (result: ImageFile, index: number) => {
+  const handleComplete = (result: BackgroundImageFile, index: number) => {
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
       updatedFiles[index] = result;
@@ -117,7 +133,11 @@ export default function BackgroundRemover() {
     });
   };
 
-  const handleError = (error: Error, imageFile: ImageFile, index: number) => {
+  const handleError = (
+    error: Error,
+    imageFile: BackgroundImageFile,
+    index: number
+  ) => {
     console.error(`Error processing image ${imageFile.name}:`, error);
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
@@ -136,7 +156,7 @@ export default function BackgroundRemover() {
 
   const processImages = async () => {
     try {
-      const queue = createImageProcessingQueue<ImageFile>(1);
+      const queue = createImageProcessingQueue<BackgroundImageFile>(1);
 
       setFiles((prevFiles) =>
         prevFiles.map((file) => ({
@@ -146,12 +166,23 @@ export default function BackgroundRemover() {
       );
 
       files.forEach((imageFile, index) => {
-        queue.enqueue({
-          task: () => processImageFile(imageFile, index),
-          onComplete: (result) => handleComplete(result, index),
-          onError: (error) => handleError(error, imageFile, index),
-          onProgress: handleProgress,
-        });
+        const prev = imageFile.processedSettings;
+        const needsProcessing =
+          !imageFile.processed ||
+          !prev ||
+          prev.quality !== quality ||
+          prev.enableResize !== enableResize ||
+          (enableResize &&
+            (prev.resizeOptions.width !== resizeOptions.width ||
+              prev.resizeOptions.height !== resizeOptions.height));
+        if (needsProcessing) {
+          queue.enqueue({
+            task: () => processImageFile(imageFile, index),
+            onComplete: (result) => handleComplete(result, index),
+            onError: (error) => handleError(error, imageFile, index),
+            onProgress: handleProgress,
+          });
+        }
       });
 
       setProcessingStatus({

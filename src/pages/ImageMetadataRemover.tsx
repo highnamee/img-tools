@@ -111,12 +111,14 @@ export default function ImageMetadataRemover() {
     );
 
     files.forEach((file, index) => {
-      queue.enqueue({
-        task: () => processImageFile(file, index),
-        onComplete: (result) => handleComplete(result, index),
-        onError: (error) => handleError(error, file, index),
-        onProgress: handleProgress,
-      });
+      if (!file.processed) {
+        queue.enqueue({
+          task: () => processImageFile(file, index),
+          onComplete: (result) => handleComplete(result, index),
+          onError: (error) => handleError(error, file, index),
+          onProgress: handleProgress,
+        });
+      }
     });
 
     setProcessingStatus({
