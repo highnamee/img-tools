@@ -41,7 +41,7 @@ export default function LandingPage() {
     {
       title: "Background Remover",
       features: [
-        "Remove backgrounds from batch of images with one click",
+        "Remove backgrounds from a batch of images with one click",
         "All free with the best image quality",
         "Perfect for product photos, portraits, and more",
       ],

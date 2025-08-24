@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageFile, ConversionFormat, downloadImage } from "@/services/imageService";
-import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 import { cn } from "@/utils/css";
+import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
 
 interface ImagePreviewProps {
   readonly file: ImageFile;
