@@ -26,8 +26,17 @@ import {
 } from "@/services/imageService";
 import { createImageProcessingQueue } from "@/services/queueService";
 
+interface ConverterImageFile extends ImageFile {
+  processedSettings?: {
+    format: ConversionFormat;
+    quality: number;
+    enableResize: boolean;
+    resizeOptions: ResizeOptions;
+  };
+}
+
 export default function ImageConverter() {
-  const [files, setFiles] = useState<ImageFile[]>([]);
+  const [files, setFiles] = useState<ConverterImageFile[]>([]);
   const [format, setFormat] = useState<ConversionFormat>("png");
   const [quality, setQuality] = useState(80);
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
@@ -67,7 +76,10 @@ export default function ImageConverter() {
     }));
   };
 
-  const processImageFile = async (imageFile: ImageFile, index: number) => {
+  const processImageFile = async (
+    imageFile: ConverterImageFile,
+    index: number
+  ) => {
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
       updatedFiles[index] = {
@@ -94,10 +106,16 @@ export default function ImageConverter() {
       newHeight,
       isProcessing: false,
       isError: false,
+      processedSettings: {
+        format,
+        quality,
+        enableResize,
+        resizeOptions: enableResize ? resizeOptions : { width: 0, height: 0 },
+      },
     };
   };
 
-  const handleComplete = (result: ImageFile, index: number) => {
+  const handleComplete = (result: ConverterImageFile, index: number) => {
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
       updatedFiles[index] = result;
@@ -105,7 +123,11 @@ export default function ImageConverter() {
     });
   };
 
-  const handleError = (error: Error, imageFile: ImageFile, index: number) => {
+  const handleError = (
+    error: Error,
+    imageFile: ConverterImageFile,
+    index: number
+  ) => {
     console.error(`Error converting image ${imageFile.name}:`, error);
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
@@ -123,7 +145,7 @@ export default function ImageConverter() {
   };
 
   const convertImages = async () => {
-    const queue = createImageProcessingQueue<ImageFile>();
+    const queue = createImageProcessingQueue<ConverterImageFile>();
 
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
@@ -133,14 +155,25 @@ export default function ImageConverter() {
     );
 
     files.forEach((imageFile, index) => {
-      if (imageFile.processed) return;
+      const prev = imageFile.processedSettings;
+      const needsProcessing =
+        !imageFile.processed ||
+        !prev ||
+        prev.format !== format ||
+        prev.quality !== quality ||
+        prev.enableResize !== enableResize ||
+        (enableResize &&
+          (prev.resizeOptions.width !== resizeOptions.width ||
+            prev.resizeOptions.height !== resizeOptions.height));
 
-      queue.enqueue({
-        task: () => processImageFile(imageFile, index),
-        onComplete: (result) => handleComplete(result, index),
-        onError: (error) => handleError(error, imageFile, index),
-        onProgress: handleProgress,
-      });
+      if (needsProcessing) {
+        queue.enqueue({
+          task: () => processImageFile(imageFile, index),
+          onComplete: (result) => handleComplete(result, index),
+          onError: (error) => handleError(error, imageFile, index),
+          onProgress: handleProgress,
+        });
+      }
     });
 
     setProcessingStatus({
@@ -163,19 +196,6 @@ export default function ImageConverter() {
 
   const handleViewDiff = (index: number) => {
     setSelectedFileIndex(index);
-  };
-
-  const resetAllFiles = () => {
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-      }))
-    );
   };
 
   return (
@@ -294,9 +314,6 @@ export default function ImageConverter() {
                 variant="outline"
               >
                 Download All
-              </Button>
-              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
-                Reset All
               </Button>
               <Button
                 onClick={() => setFiles([])}

@@ -96,14 +96,14 @@ export default function Base64Converter() {
     );
 
     files.forEach((imageFile, index) => {
-      if (imageFile.base64String) return;
-
-      queue.enqueue({
-        task: () => processImageFile(imageFile, index),
-        onComplete: (result) => handleComplete(result, index),
-        onError: (error) => handleError(error, imageFile, index),
-        onProgress: handleProgress,
-      });
+      if (!imageFile.processed) {
+        queue.enqueue({
+          task: () => processImageFile(imageFile, index),
+          onComplete: (result) => handleComplete(result, index),
+          onError: (error) => handleError(error, imageFile, index),
+          onProgress: handleProgress,
+        });
+      }
     });
 
     setProcessingStatus({
@@ -118,21 +118,6 @@ export default function Base64Converter() {
 
   const closeBase64Output = () => {
     setSelectedFileIndex(null);
-  };
-
-  const resetAllFiles = () => {
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-        base64String: undefined,
-        htmlImgTag: undefined,
-      }))
-    );
   };
 
   return (
@@ -156,9 +141,6 @@ export default function Base64Converter() {
                 className="w-32"
               >
                 {processingStatus.processing > 0 ? `Converting...` : "Convert Images"}
-              </Button>
-              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
-                Reset All
               </Button>
               <Button
                 onClick={() => setFiles([])}
