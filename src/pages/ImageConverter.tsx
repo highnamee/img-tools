@@ -133,8 +133,6 @@ export default function ImageConverter() {
     );
 
     files.forEach((imageFile, index) => {
-      if (imageFile.processed) return;
-
       queue.enqueue({
         task: () => processImageFile(imageFile, index),
         onComplete: (result) => handleComplete(result, index),
@@ -163,19 +161,6 @@ export default function ImageConverter() {
 
   const handleViewDiff = (index: number) => {
     setSelectedFileIndex(index);
-  };
-
-  const resetAllFiles = () => {
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-      }))
-    );
   };
 
   return (
@@ -287,9 +272,6 @@ export default function ImageConverter() {
                 variant="outline"
               >
                 Download All
-              </Button>
-              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
-                Reset All
               </Button>
               <Button
                 onClick={() => setFiles([])}

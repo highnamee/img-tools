@@ -111,8 +111,6 @@ export default function ImageMetadataRemover() {
     );
 
     files.forEach((file, index) => {
-      if (file.processed) return;
-
       queue.enqueue({
         task: () => processImageFile(file, index),
         onComplete: (result) => handleComplete(result, index),
@@ -140,21 +138,6 @@ export default function ImageMetadataRemover() {
   const openInGoogleMaps = (coordinates: { lat: number; lng: number }) => {
     const url = `https://www.google.com/maps?q=${coordinates.lat},${coordinates.lng}`;
     window.open(url, "_blank");
-  };
-
-  const resetAllFiles = () => {
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-        metadata: undefined,
-        coordinates: undefined,
-      }))
-    );
   };
 
   return (
@@ -186,9 +169,6 @@ export default function ImageMetadataRemover() {
                 variant="outline"
               >
                 Download All
-              </Button>
-              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
-                Reset All
               </Button>
               <Button
                 onClick={() => setFiles([])}
