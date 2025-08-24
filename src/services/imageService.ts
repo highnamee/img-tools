@@ -97,15 +97,18 @@ export const downloadImage = (blob: Blob, filename: string, format: ConversionFo
   link.download = `${filename.split(".")[0]}.${format}`;
   document.body.appendChild(link);
   link.click();
+  URL.revokeObjectURL(link.href);
   document.body.removeChild(link);
 };
 
 export const getImageSize = async (file: Blob) => {
   const img = new Image();
-  img.src = URL.createObjectURL(file);
+  const objectUrl = URL.createObjectURL(file);
+  img.src = objectUrl;
   await new Promise((resolve) => {
     img.onload = resolve;
   });
 
+  URL.revokeObjectURL(objectUrl);
   return { width: img.width, height: img.height };
 };
