@@ -13,7 +13,7 @@ export class ProcessQueue<R> {
   private processing = 0;
   private readonly maxConcurrent: number;
 
-  constructor(maxConcurrent = 3) {
+  constructor(maxConcurrent = 2) {
     this.maxConcurrent = maxConcurrent;
   }
 
@@ -97,8 +97,8 @@ export class ProcessQueue<R> {
 }
 
 /**
- * Create an image processing queue with a limit of maxConcurrent concurrent operations
- * @param maxConcurrent Maximum number of concurrent operations (default: 2)
+ * Create an image processing queue with a limit of maxConcurrent concurrent operations.
+ * @param maxConcurrent Maximum number of concurrent operations (defaults to 2)
  */
 export const createImageProcessingQueue = <R>(maxConcurrent = 2) => {
   return new ProcessQueue<R>(maxConcurrent);
