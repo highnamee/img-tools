@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from "react";
+import { useState, ChangeEvent, useEffect } from "react";
 
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -26,6 +26,19 @@ export default function BackgroundRemover() {
     processing: 0,
   });
   const [loadingStatus, setLoadingStatus] = useState<string>("");
+
+  useEffect(() => {
+    const preloadModel = async () => {
+      try {
+        const { preload } = await import("@imgly/background-removal");
+        await preload({ device: "gpu" });
+      } catch (error) {
+        console.error("Error preloading background removal model:", error);
+      }
+    };
+
+    void preloadModel();
+  }, []);
 
   const handleFilesAdded = (newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
