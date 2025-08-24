@@ -236,22 +236,30 @@ export default function BackgroundRemover() {
                   </label>
                 </div>
                 {enableResize && (
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Width"
-                      value={resizeOptions.width || ""}
-                      onChange={handleWidthChange}
-                      className="w-28"
-                    />
-                    <span className="text-muted-foreground">or</span>
-                    <Input
-                      type="number"
-                      placeholder="Height"
-                      value={resizeOptions.height || ""}
-                      onChange={handleHeightChange}
-                      className="w-28"
-                    />
+                  <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                      <Input
+                        type="number"
+                        placeholder="Width"
+                        value={resizeOptions.width || ""}
+                        onChange={handleWidthChange}
+                        className="w-28"
+                        disabled={!!resizeOptions.height}
+                      />
+                      <span className="text-muted-foreground">or</span>
+                      <Input
+                        type="number"
+                        placeholder="Height"
+                        value={resizeOptions.height || ""}
+                        onChange={handleHeightChange}
+                        className="w-28"
+                        disabled={!!resizeOptions.width}
+                      />
+                    </div>
+                    <p className="text-muted-foreground text-xs">
+                      Enter <strong>either width or height</strong>. The other dimension will be
+                      calculated automatically to maintain aspect ratio.
+                    </p>
                   </div>
                 )}
               </div>
