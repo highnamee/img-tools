@@ -85,6 +85,16 @@ export function ImageDiffModal({
                 25% ({Math.round(originalWidth * 0.25)}×{Math.round(originalHeight * 0.25)})
               </label>
             </div>
+            <div className="flex items-center gap-2">
+              <Checkbox
+                id="scale-10"
+                checked={scale === 10}
+                onCheckedChange={(checked) => checked && setScale(10)}
+              />
+              <label htmlFor="scale-10">
+                10% ({Math.round(originalWidth * 0.10)}×{Math.round(originalHeight * 0.10)})
+              </label>
+            </div>
           </div>
           <ScrollArea className="h-[60vh] sm:h-[80vh]">
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 p-1">
