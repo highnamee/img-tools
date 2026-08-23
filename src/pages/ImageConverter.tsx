@@ -212,8 +212,6 @@ export default function ImageConverter() {
                     <SelectItem value="jpeg">JPEG</SelectItem>
                     <SelectItem value="png">PNG</SelectItem>
                     <SelectItem value="webp">WebP</SelectItem>
-                    <SelectItem value="avif">AVIF</SelectItem>
-                    <SelectItem value="gif">GIF</SelectItem>
                     <SelectItem value="bmp">BMP</SelectItem>
                     <SelectItem value="tiff">TIFF</SelectItem>
                   </SelectContent>

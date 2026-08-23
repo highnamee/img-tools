@@ -1,5 +1,3 @@
-import { Options } from "browser-image-compression";
-
 export interface ImageFile {
   file: File;
   name: string;
@@ -14,7 +12,7 @@ export interface ImageFile {
   isError?: boolean;
 }
 
-export type ConversionFormat = "png" | "jpeg" | "webp" | "avif" | "bmp" | "tiff";
+export type ConversionFormat = "png" | "jpeg" | "webp" | "bmp" | "tiff";
 
 export type ResizeOptions = {
   width: number;
@@ -28,7 +26,6 @@ export const formatRecommendations: Record<
   jpeg: { defaultQuality: 85, description: "Best for photos and complex images" },
   png: { defaultQuality: 80, description: "Good for images with transparency" },
   webp: { defaultQuality: 80, description: "Modern format with good compression" },
-  avif: { defaultQuality: 75, description: "Advanced format with excellent compression" },
   bmp: { defaultQuality: 100, description: "Uncompressed format, not recommended" },
   tiff: { defaultQuality: 100, description: "High quality, large file size" },
 };
@@ -38,6 +35,87 @@ export const createImageFile = (file: File): ImageFile => ({
   preview: URL.createObjectURL(file),
   name: file.name,
 });
+
+const canvasConvert = async (
+  file: File,
+  format: ConversionFormat,
+  quality: number,
+  resizeOptions?: ResizeOptions,
+  originalWidth?: number,
+  originalHeight?: number
+): Promise<Blob> => {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
+    img.src = objectUrl;
+
+    img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
+
+      let targetWidth = originalWidth || img.width;
+      let targetHeight = originalHeight || img.height;
+
+      if (resizeOptions) {
+        const { width, height } = resizeOptions;
+        const ratio = targetWidth / targetHeight;
+
+        if (width && height) {
+          targetWidth = width;
+          targetHeight = height;
+        } else if (width) {
+          targetWidth = width;
+          targetHeight = width / ratio;
+        } else if (height) {
+          targetHeight = height;
+          targetWidth = height * ratio;
+        }
+      }
+
+      targetWidth = Math.round(targetWidth);
+      targetHeight = Math.round(targetHeight);
+
+      const canvas = document.createElement("canvas");
+      canvas.width = targetWidth;
+      canvas.height = targetHeight;
+      const ctx = canvas.getContext("2d");
+
+      if (!ctx) {
+        reject(new Error("Failed to get 2D context"));
+        return;
+      }
+
+      ctx.imageSmoothingEnabled = true;
+      ctx.imageSmoothingQuality = "high";
+
+      // If format is JPEG, draw a white background to preserve transparency nicely
+      if (format === "jpeg") {
+        ctx.fillStyle = "#FFFFFF";
+        ctx.fillRect(0, 0, targetWidth, targetHeight);
+      }
+
+      ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+      const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
+
+      canvas.toBlob(
+        (blob) => {
+          if (blob) {
+            resolve(blob);
+          } else {
+            reject(new Error("Canvas conversion returned null blob"));
+          }
+        },
+        mimeType,
+        quality / 100
+      );
+    };
+
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+  });
+};
 
 export const convertImage = async (
   imageFile: ImageFile,
@@ -56,38 +134,27 @@ export const convertImage = async (
     return file;
   }
 
-  const options: Options = {
-    useWebWorker: true,
-    fileType: `image/${format}`,
-    initialQuality: quality / 100,
-    preserveExif: false,
-  };
-
-  if (resizeOptions) {
-    const { width, height } = resizeOptions;
-    const ratio = originalWidth / originalHeight;
-
-    if (width) {
-      options.maxWidthOrHeight = originalWidth > originalHeight ? width : width / ratio;
-    } else if (height) {
-      options.maxWidthOrHeight = originalWidth > originalHeight ? height * ratio : height;
-    }
-  } else {
-    options.alwaysKeepResolution = true;
-  }
+  const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
 
   try {
-    const imageCompression = (await import("browser-image-compression")).default;
-    const compressedBlob = await imageCompression(file, options);
+    const canvasBlob = await canvasConvert(
+      file,
+      format,
+      quality,
+      resizeOptions,
+      originalWidth,
+      originalHeight
+    );
 
-    if (compressedBlob.size > file.size) {
+    const isSameFormat = file.type === mimeType;
+    if (isSameFormat && canvasBlob.size > file.size) {
       console.warn(`Compression resulted in larger file size for ${file.name}, returning original`);
       return file;
     }
 
-    return compressedBlob;
-  } catch (error) {
-    console.error("Error compressing image:", error);
+    return canvasBlob;
+  } catch (err) {
+    console.error("Canvas conversion failed:", err);
     return file;
   }
 };
