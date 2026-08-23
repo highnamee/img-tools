@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from "react";
+import { useState } from "react";
 
 import { Base64Modal } from "@/components/Base64Modal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fileToBase64, createImgTagWithBase64 } from "@/services/base64Service";
 import { ImageFile } from "@/services/imageService";
-import { ProcessQueue, createImageProcessingQueue } from "@/services/queueService";
+import { useImageQueue } from "@/hooks/useImageQueue";
 import { extractImageFormat } from "@/utils/imageUtils";
 
 interface Base64ImageFile extends ImageFile {
@@ -16,56 +16,19 @@ interface Base64ImageFile extends ImageFile {
 }
 
 export default function Base64Converter() {
-  const [files, setFiles] = useState<Base64ImageFile[]>([]);
+  const {
+    files,
+    setFiles,
+    processingStatus,
+    setProcessingStatus,
+    queue,
+    handleFilesAdded,
+    handleRemoveFile,
+    clearAllFiles,
+    handleProgress,
+  } = useImageQueue<Base64ImageFile>(2);
 
-  const filesRef = useRef(files);
-  useEffect(() => {
-    filesRef.current = files;
-  }, [files]);
-
-  const queueRef = useRef<ProcessQueue<Base64ImageFile> | null>(null);
-  if (queueRef.current == null) {
-    queueRef.current = createImageProcessingQueue<Base64ImageFile>();
-  }
-
-  useEffect(() => {
-    return () => {
-      if (queueRef.current) {
-        queueRef.current.clear();
-      }
-      filesRef.current.forEach((file) => {
-        URL.revokeObjectURL(file.preview);
-        if (file.processedPreview) {
-          URL.revokeObjectURL(file.processedPreview);
-        }
-      });
-    };
-  }, []);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<{
-    waiting: number;
-    processing: number;
-  }>({
-    waiting: 0,
-    processing: 0,
-  });
-
-  const handleFilesAdded = (newFiles: ImageFile[]) => {
-    setFiles((prev) => [...prev, ...newFiles]);
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setFiles((prev) => {
-      const file = prev[index];
-      if (file) {
-        URL.revokeObjectURL(file.preview);
-        if (file.processedPreview) {
-          URL.revokeObjectURL(file.processedPreview);
-        }
-      }
-      return prev.filter((_, i) => i !== index);
-    });
-  };
 
   const processImageFile = async (imageFile: Base64ImageFile, index: number) => {
     setFiles((prevFiles) => {
@@ -113,14 +76,10 @@ export default function Base64Converter() {
     });
   };
 
-  const handleProgress = (processing: number, waiting: number) => {
-    setProcessingStatus({ waiting, processing });
-  };
 
   const convertToBase64 = async () => {
     if (files.length === 0) return;
 
-    const queue = queueRef.current!;
     queue.clear();
 
     setFiles((prevFiles) =>
@@ -156,9 +115,7 @@ export default function Base64Converter() {
   };
 
   const resetAllFiles = () => {
-    if (queueRef.current) {
-      queueRef.current.clear();
-    }
+    queue.clear();
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview && file.processedPreview !== file.preview) {
@@ -179,18 +136,6 @@ export default function Base64Converter() {
     );
   };
 
-  const clearAllFiles = () => {
-    if (queueRef.current) {
-      queueRef.current.clear();
-    }
-    files.forEach((file) => {
-      URL.revokeObjectURL(file.preview);
-      if (file.processedPreview && file.processedPreview !== file.preview) {
-        URL.revokeObjectURL(file.processedPreview);
-      }
-    });
-    setFiles([]);
-  };
 
   return (
     <div className="container mx-auto py-8">

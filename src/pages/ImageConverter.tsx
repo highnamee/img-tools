@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, ChangeEvent } from "react";
+import { useState, ChangeEvent } from "react";
 
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -24,69 +24,30 @@ import {
   ResizeOptions,
   getImageSize,
 } from "@/services/imageService";
-import { ProcessQueue, createImageProcessingQueue } from "@/services/queueService";
+import { useImageQueue } from "@/hooks/useImageQueue";
 
 export default function ImageConverter() {
-  const [files, setFiles] = useState<ImageFile[]>([]);
-
-  const filesRef = useRef(files);
-  useEffect(() => {
-    filesRef.current = files;
-  }, [files]);
-
-  const queueRef = useRef<ProcessQueue<ImageFile> | null>(null);
-  if (queueRef.current == null) {
-    queueRef.current = createImageProcessingQueue<ImageFile>();
-  }
-
-  useEffect(() => {
-    return () => {
-      if (queueRef.current) {
-        queueRef.current.clear();
-      }
-      filesRef.current.forEach((file) => {
-        URL.revokeObjectURL(file.preview);
-        if (file.processedPreview) {
-          URL.revokeObjectURL(file.processedPreview);
-        }
-      });
-    };
-  }, []);
+  const {
+    files,
+    setFiles,
+    processingStatus,
+    setProcessingStatus,
+    queue,
+    handleFilesAdded,
+    handleRemoveFile,
+    clearAllFiles,
+    handleProgress,
+  } = useImageQueue<ImageFile>(2);
   const [format, setFormat] = useState<ConversionFormat>("png");
   const [quality, setQuality] = useState(80);
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
-  const [processingStatus, setProcessingStatus] = useState<{
-    waiting: number;
-    processing: number;
-  }>({
-    waiting: 0,
-    processing: 0,
-  });
 
   const handleFormatChange = (newFormat: ConversionFormat) => {
     setFormat(newFormat);
     setQuality(formatRecommendations[newFormat].defaultQuality);
   };
-
-  const handleFilesAdded = (newFiles: ImageFile[]) => {
-    setFiles((prev) => [...prev, ...newFiles]);
-  };
-
-  const handleRemoveFile = (index: number) => {
-    setFiles((prev) => {
-      const file = prev[index];
-      if (file) {
-        URL.revokeObjectURL(file.preview);
-        if (file.processedPreview) {
-          URL.revokeObjectURL(file.processedPreview);
-        }
-      }
-      return prev.filter((_, i) => i !== index);
-    });
-  };
-
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
     setResizeOptions(() => ({
       height: 0,
@@ -157,12 +118,8 @@ export default function ImageConverter() {
     });
   };
 
-  const handleProgress = (processing: number, waiting: number) => {
-    setProcessingStatus({ waiting, processing });
-  };
 
   const convertImages = async () => {
-    const queue = queueRef.current!;
     queue.clear();
 
     setFiles((prevFiles) =>
@@ -206,9 +163,7 @@ export default function ImageConverter() {
   };
 
   const resetAllFiles = () => {
-    if (queueRef.current) {
-      queueRef.current.clear();
-    }
+    queue.clear();
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview) {
@@ -227,18 +182,6 @@ export default function ImageConverter() {
     );
   };
 
-  const clearAllFiles = () => {
-    if (queueRef.current) {
-      queueRef.current.clear();
-    }
-    files.forEach((file) => {
-      URL.revokeObjectURL(file.preview);
-      if (file.processedPreview) {
-        URL.revokeObjectURL(file.processedPreview);
-      }
-    });
-    setFiles([]);
-  };
 
   return (
     <div className="container mx-auto py-8">
