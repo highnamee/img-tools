@@ -24,7 +24,7 @@ import {
   ResizeOptions,
   getImageSize,
 } from "@/services/imageService";
-import { createImageProcessingQueue } from "@/services/queueService";
+import { ProcessQueue, createImageProcessingQueue } from "@/services/queueService";
 
 export default function ImageConverter() {
   const [files, setFiles] = useState<ImageFile[]>([]);
@@ -34,8 +34,16 @@ export default function ImageConverter() {
     filesRef.current = files;
   }, [files]);
 
+  const queueRef = useRef<ProcessQueue<ImageFile> | null>(null);
+  if (queueRef.current == null) {
+    queueRef.current = createImageProcessingQueue<ImageFile>();
+  }
+
   useEffect(() => {
     return () => {
+      if (queueRef.current) {
+        queueRef.current.clear();
+      }
       filesRef.current.forEach((file) => {
         URL.revokeObjectURL(file.preview);
         if (file.processedPreview) {
@@ -154,7 +162,8 @@ export default function ImageConverter() {
   };
 
   const convertImages = async () => {
-    const queue = createImageProcessingQueue<ImageFile>();
+    const queue = queueRef.current!;
+    queue.clear();
 
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
@@ -197,6 +206,9 @@ export default function ImageConverter() {
   };
 
   const resetAllFiles = () => {
+    if (queueRef.current) {
+      queueRef.current.clear();
+    }
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview) {

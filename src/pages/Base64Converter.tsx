@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { fileToBase64, createImgTagWithBase64 } from "@/services/base64Service";
 import { ImageFile } from "@/services/imageService";
-import { createImageProcessingQueue } from "@/services/queueService";
+import { ProcessQueue, createImageProcessingQueue } from "@/services/queueService";
 import { extractImageFormat } from "@/utils/imageUtils";
 
 interface Base64ImageFile extends ImageFile {
@@ -23,8 +23,16 @@ export default function Base64Converter() {
     filesRef.current = files;
   }, [files]);
 
+  const queueRef = useRef<ProcessQueue<Base64ImageFile> | null>(null);
+  if (queueRef.current == null) {
+    queueRef.current = createImageProcessingQueue<Base64ImageFile>();
+  }
+
   useEffect(() => {
     return () => {
+      if (queueRef.current) {
+        queueRef.current.clear();
+      }
       filesRef.current.forEach((file) => {
         URL.revokeObjectURL(file.preview);
         if (file.processedPreview) {
@@ -112,7 +120,8 @@ export default function Base64Converter() {
   const convertToBase64 = async () => {
     if (files.length === 0) return;
 
-    const queue = createImageProcessingQueue<Base64ImageFile>();
+    const queue = queueRef.current!;
+    queue.clear();
 
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
@@ -147,6 +156,9 @@ export default function Base64Converter() {
   };
 
   const resetAllFiles = () => {
+    if (queueRef.current) {
+      queueRef.current.clear();
+    }
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview && file.processedPreview !== file.preview) {

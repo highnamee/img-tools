@@ -10,7 +10,7 @@ import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile, convertImage, ResizeOptions, getImageSize } from "@/services/imageService";
-import { createImageProcessingQueue } from "@/services/queueService";
+import { ProcessQueue, createImageProcessingQueue } from "@/services/queueService";
 
 export default function BackgroundRemover() {
   const [files, setFiles] = useState<ImageFile[]>([]);
@@ -20,8 +20,16 @@ export default function BackgroundRemover() {
     filesRef.current = files;
   }, [files]);
 
+  const queueRef = useRef<ProcessQueue<ImageFile> | null>(null);
+  if (queueRef.current == null) {
+    queueRef.current = createImageProcessingQueue<ImageFile>(1);
+  }
+
   useEffect(() => {
     return () => {
+      if (queueRef.current) {
+        queueRef.current.clear();
+      }
       filesRef.current.forEach((file) => {
         URL.revokeObjectURL(file.preview);
         if (file.processedPreview) {
@@ -179,7 +187,8 @@ export default function BackgroundRemover() {
 
   const processImages = async () => {
     try {
-      const queue = createImageProcessingQueue<ImageFile>(1);
+      const queue = queueRef.current!;
+      queue.clear();
 
       setFiles((prevFiles) =>
         prevFiles.map((file) => ({
@@ -221,6 +230,9 @@ export default function BackgroundRemover() {
   };
 
   const resetAllFiles = () => {
+    if (queueRef.current) {
+      queueRef.current.clear();
+    }
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview) {

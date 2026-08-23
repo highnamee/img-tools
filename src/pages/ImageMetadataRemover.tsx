@@ -8,7 +8,7 @@ import { Card } from "@/components/ui/card";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile } from "@/services/imageService";
 import { MetadataField, extractMetadata, removeMetadata } from "@/services/metadataService";
-import { createImageProcessingQueue } from "@/services/queueService";
+import { ProcessQueue, createImageProcessingQueue } from "@/services/queueService";
 import { extractImageFormat } from "@/utils/imageUtils";
 
 interface ImageWithMetadata extends ImageFile {
@@ -24,8 +24,16 @@ export default function ImageMetadataRemover() {
     filesRef.current = files;
   }, [files]);
 
+  const queueRef = useRef<ProcessQueue<ImageWithMetadata> | null>(null);
+  if (queueRef.current == null) {
+    queueRef.current = createImageProcessingQueue<ImageWithMetadata>();
+  }
+
   useEffect(() => {
     return () => {
+      if (queueRef.current) {
+        queueRef.current.clear();
+      }
       filesRef.current.forEach((file) => {
         URL.revokeObjectURL(file.preview);
         if (file.processedPreview) {
@@ -131,7 +139,8 @@ export default function ImageMetadataRemover() {
   };
 
   const processImages = async () => {
-    const queue = createImageProcessingQueue<ImageWithMetadata>();
+    const queue = queueRef.current!;
+    queue.clear();
 
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
@@ -173,6 +182,9 @@ export default function ImageMetadataRemover() {
   };
 
   const resetAllFiles = () => {
+    if (queueRef.current) {
+      queueRef.current.clear();
+    }
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview) {
