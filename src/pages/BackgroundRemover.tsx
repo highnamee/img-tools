@@ -6,11 +6,6 @@ import { ImagePreview } from "@/components/ImagePreview";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
-import { downloadAllFiles } from "@/services/fileService";
-import { ImageFile, convertImage, ResizeOptions, getImageSize } from "@/services/imageService";
-import { useImageQueue } from "@/hooks/useImageQueue";
 import {
   Select,
   SelectContent,
@@ -18,17 +13,22 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Switch } from "@/components/ui/switch";
+import { useImageQueue } from "@/hooks/useImageQueue";
+import { downloadAllFiles } from "@/services/fileService";
+import { ImageFile, convertImage, ResizeOptions, getImageSize } from "@/services/imageService";
 
 export default function BackgroundRemover() {
   const {
     files,
     setFiles,
     processingStatus,
-    setProcessingStatus,
     queue,
     handleFilesAdded,
     handleRemoveFile,
     clearAllFiles,
+    resetSingleFile,
     handleProgress,
   } = useImageQueue<ImageFile>(1);
   const [quality, setQuality] = useState<number>(80);
@@ -56,6 +56,7 @@ export default function BackgroundRemover() {
 
     void preloadModel();
   }, [modelVariant]);
+
   const handleViewDiff = (index: number) => {
     setSelectedFileIndex(index);
   };
@@ -178,38 +179,26 @@ export default function BackgroundRemover() {
     });
   };
 
-
   const processImages = async () => {
-    try {
-      queue.clear();
+    queue.current!.clear();
 
-      setFiles((prevFiles) =>
-        prevFiles.map((file) => ({
-          ...file,
-          isError: false,
-        }))
-      );
+    setFiles((prevFiles) =>
+      prevFiles.map((file) => ({
+        ...file,
+        isError: false,
+      }))
+    );
 
-      files.forEach((imageFile, index) => {
-        if (imageFile.processed) return;
+    files.forEach((imageFile, index) => {
+      if (imageFile.processed) return;
 
-        queue.enqueue({
-          task: () => processImageFile(imageFile, index),
-          onComplete: (result) => handleComplete(result, index),
-          onError: (error) => handleError(error, imageFile, index),
-          onProgress: handleProgress,
-        });
+      queue.current!.enqueue({
+        task: () => processImageFile(imageFile, index),
+        onComplete: (result) => handleComplete(result, index),
+        onError: (error) => handleError(error, imageFile, index),
+        onProgress: handleProgress,
       });
-
-      setProcessingStatus({
-        waiting: queue.waiting,
-        processing: queue.active,
-      });
-    } catch (error) {
-      console.error("Error processing images:", error);
-    } finally {
-      setLoadingStatus("");
-    }
+    });
   };
 
   const downloadAll = () => {
@@ -223,7 +212,7 @@ export default function BackgroundRemover() {
   };
 
   const resetAllFiles = () => {
-    queue.clear();
+    queue.current!.clear();
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview) {
@@ -242,181 +231,191 @@ export default function BackgroundRemover() {
     );
   };
 
-
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
-        <div>
-          <h1 className="mb-4 text-2xl font-bold">Background Remover</h1>
-          <h2 className="text-muted-foreground mb-4 text-xs">
-            Remove backgrounds from your images with one click - perfect for product photos,
+        {/* Header */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold">Background Remover</h1>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Remove backgrounds from your images with one click — perfect for product photos,
             portraits, and more.
-          </h2>
+          </p>
         </div>
+
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
+        {/* Model loading banner */}
         {loadingStatus && (
-          <div className="bg-primary/5 text-primary border-primary/20 flex items-center gap-3 rounded-lg border p-4 text-sm animate-pulse mt-4">
+          <div className="bg-primary/5 text-primary border-primary/20 mt-4 flex animate-pulse items-center gap-3 rounded-lg border p-4 text-sm">
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
             <span>{loadingStatus}</span>
           </div>
         )}
 
-        <div className="space-y-6">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-wrap items-center gap-10">
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium">Quality: {quality}%</label>
-                  <button
-                    onClick={() => setQuality(80)}
-                    className="text-primary text-xs hover:underline"
-                  >
-                    Reset
-                  </button>
-                </div>
-                <Slider
-                  value={[quality]}
-                  onValueChange={([value]) => setQuality(value)}
-                  min={1}
-                  max={100}
-                  step={1}
-                  className="w-64"
-                />
-              </div>
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Model Preset</label>
-                <Select
-                  value={modelVariant}
-                  onValueChange={(val: any) => setModelVariant(val)}
+        {/* Settings Panel */}
+        <div className="bg-muted/30 border-border mt-6 rounded-xl border p-4">
+          <p className="text-muted-foreground mb-4 text-xs font-semibold uppercase tracking-wider">
+            Settings
+          </p>
+          <div className="flex flex-wrap items-start gap-8">
+            {/* Quality */}
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-4">
+                <label className="text-sm font-medium">Quality: {quality}%</label>
+                <button
+                  onClick={() => setQuality(80)}
+                  className="text-primary text-xs hover:underline"
                 >
-                  <SelectTrigger className="w-56">
-                    <SelectValue placeholder="Select Preset" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="isnet_quint8">Speed (Quantized, ~22MB)</SelectItem>
-                    <SelectItem value="isnet_fp16">Balanced (16-bit, ~44MB)</SelectItem>
-                    <SelectItem value="isnet">Maximum Detail (32-bit, ~176MB)</SelectItem>
-                  </SelectContent>
-                </Select>
+                  Reset
+                </button>
               </div>
-              <div className="space-y-2">
-                <div className="flex items-center gap-2">
-                  <Switch checked={enableResize} onCheckedChange={setEnableResize} />
-                  <label className="font-medium">
-                    <span className="text-sm">Resize</span>
-                    <span className="text-xs">
-                      {" • Aspect ratio will be maintained automatically"}
-                    </span>
-                  </label>
-                </div>
-                {enableResize && (
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <Input
-                        type="number"
-                        placeholder="Width"
-                        value={resizeOptions.width || ""}
-                        onChange={handleWidthChange}
-                        className="w-28"
-                        disabled={!!resizeOptions.height}
-                      />
-                      <span className="text-muted-foreground">or</span>
-                      <Input
-                        type="number"
-                        placeholder="Height"
-                        value={resizeOptions.height || ""}
-                        onChange={handleHeightChange}
-                        className="w-28"
-                        disabled={!!resizeOptions.width}
-                      />
-                    </div>
-                    <p className="text-muted-foreground text-xs">
-                      Enter <strong>either width or height</strong>. The other dimension will be
-                      calculated automatically to maintain aspect ratio.
-                    </p>
+              <Slider
+                value={[quality]}
+                onValueChange={([value]) => setQuality(value)}
+                min={1}
+                max={100}
+                step={1}
+                className="w-56"
+              />
+            </div>
+
+            {/* Model */}
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Model Preset</label>
+              <Select
+                value={modelVariant}
+                onValueChange={(val: "isnet_fp16" | "isnet" | "isnet_quint8") =>
+                  setModelVariant(val)
+                }
+              >
+                <SelectTrigger className="w-56">
+                  <SelectValue placeholder="Select Preset" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="isnet_quint8">Speed (Quantized, ~22 MB)</SelectItem>
+                  <SelectItem value="isnet_fp16">Balanced (16-bit, ~44 MB)</SelectItem>
+                  <SelectItem value="isnet">Maximum Detail (32-bit, ~176 MB)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Resize */}
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <Switch checked={enableResize} onCheckedChange={setEnableResize} />
+                <label className="text-sm font-medium">Resize</label>
+              </div>
+              {enableResize && (
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2">
+                    <Input
+                      type="number"
+                      placeholder="Width px"
+                      value={resizeOptions.width || ""}
+                      onChange={handleWidthChange}
+                      className="w-28"
+                      disabled={!!resizeOptions.height}
+                    />
+                    <span className="text-muted-foreground text-xs">or</span>
+                    <Input
+                      type="number"
+                      placeholder="Height px"
+                      value={resizeOptions.height || ""}
+                      onChange={handleHeightChange}
+                      className="w-28"
+                      disabled={!!resizeOptions.width}
+                    />
                   </div>
-                )}
-              </div>
-            </div>
-
-            <div className="flex flex-wrap gap-4">
-              <Button
-                onClick={processImages}
-                disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-                className="w-40"
-              >
-                {processingStatus.processing > 0 ? "Removing..." : "Remove Background"}
-              </Button>
-              <Button
-                onClick={downloadAll}
-                disabled={!files.some((f) => f.processed)}
-                variant="outline"
-              >
-                Download All
-              </Button>
-              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
-                Reset All
-              </Button>
-              <Button
-                onClick={clearAllFiles}
-                disabled={files.length === 0}
-                variant="destructive"
-              >
-                Clear All
-              </Button>
-            </div>
-
-            <div className="text-muted-foreground text-xs">
-              {`${files.length} Uploaded `}
-              {loadingStatus && `• ${loadingStatus}`}
-              {processingStatus.processing > 0 &&
-                `• Processing ${processingStatus.processing} images`}
-              {processingStatus.waiting > 0 &&
-                `• ${processingStatus.waiting} images are waiting to be processed`}
+                  <p className="text-muted-foreground text-xs">
+                    Aspect ratio maintained automatically
+                  </p>
+                </div>
+              )}
             </div>
           </div>
         </div>
 
-        {files.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-            {files.map((file, fileIndex) => (
-              <ImagePreview
-                key={file.name + file.preview}
-                file={file}
-                format="png"
-                onRemove={() => handleRemoveFile(fileIndex)}
-                onPreview={file.processed ? () => handleViewDiff(fileIndex) : undefined}
-                extraData={
-                  file.processed && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs flex-1"
-                      onClick={() => handleViewDiff(fileIndex)}
-                    >
-                      View Diff
-                    </Button>
-                  )
-                }
-              />
-            ))}
+        {/* Action Toolbar */}
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={processImages}
+              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+              size="sm"
+            >
+              {processingStatus.processing > 0 ? "Removing…" : "Remove Background"}
+            </Button>
+            <Button
+              onClick={downloadAll}
+              disabled={!files.some((f) => f.processed)}
+              variant="outline"
+              size="sm"
+            >
+              Download All
+            </Button>
+            <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline" size="sm">
+              Reset All
+            </Button>
           </div>
-        )}
-
-        {selectedFileIndex !== null && files[selectedFileIndex]?.processed && (
-          <ImageDiffModal
-            isOpen={true}
-            onClose={() => setSelectedFileIndex(null)}
-            originalSrc={files[selectedFileIndex].preview}
-            processedSrc={files[selectedFileIndex].processedPreview ?? ""}
-            originalWidth={files[selectedFileIndex].originalWidth ?? 0}
-            originalHeight={files[selectedFileIndex].originalHeight ?? 0}
-            newWidth={files[selectedFileIndex].newWidth ?? 0}
-            newHeight={files[selectedFileIndex].newHeight ?? 0}
-          />
+          <Button
+            onClick={clearAllFiles}
+            disabled={files.length === 0}
+            variant="destructive"
+            size="sm"
+          >
+            Remove All
+          </Button>
+        </div>
+        {(files.length > 0 || processingStatus.processing > 0) && (
+          <p className="text-muted-foreground mt-1 text-xs">
+            {files.length} file{files.length !== 1 ? "s" : ""}
+            {processingStatus.processing > 0 && ` • Processing ${processingStatus.processing}`}
+            {processingStatus.waiting > 0 && ` • ${processingStatus.waiting} waiting`}
+          </p>
         )}
       </Card>
+
+      {/* Image Grid */}
+      {files.length > 0 && (
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+          {files.map((file, fileIndex) => (
+            <ImagePreview
+              key={file.name + file.preview}
+              file={file}
+              format="png"
+              onRemove={() => handleRemoveFile(fileIndex)}
+              onPreview={file.processed ? () => handleViewDiff(fileIndex) : undefined}
+              extraData={
+                file.processed && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 flex-1 text-xs"
+                    onClick={() => resetSingleFile(fileIndex)}
+                  >
+                    Reset
+                  </Button>
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Preview modal */}
+      {selectedFileIndex !== null && files[selectedFileIndex]?.processed && (
+        <ImageDiffModal
+          isOpen={true}
+          onClose={() => setSelectedFileIndex(null)}
+          originalSrc={files[selectedFileIndex].preview}
+          processedSrc={files[selectedFileIndex].processedPreview ?? ""}
+          originalWidth={files[selectedFileIndex].originalWidth ?? 0}
+          originalHeight={files[selectedFileIndex].originalHeight ?? 0}
+          newWidth={files[selectedFileIndex].newWidth ?? 0}
+          newHeight={files[selectedFileIndex].newHeight ?? 0}
+        />
+      )}
     </div>
   );
 }

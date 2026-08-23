@@ -2,7 +2,7 @@ import js from "@eslint/js";
 import globals from "globals";
 import reactHooks from "eslint-plugin-react-hooks";
 import reactRefresh from "eslint-plugin-react-refresh";
-import importPlugin from "eslint-plugin-import";
+import importPlugin from "eslint-plugin-import-x";
 import tseslint from "typescript-eslint";
 
 export default tseslint.config(
@@ -17,12 +17,12 @@ export default tseslint.config(
     plugins: {
       "react-hooks": reactHooks,
       "react-refresh": reactRefresh,
-      import: importPlugin,
+      "import-x": importPlugin,
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
       "react-refresh/only-export-components": ["warn", { allowConstantExport: true }],
-      "import/order": [
+      "import-x/order": [
         "error",
         {
           groups: [
@@ -60,9 +60,9 @@ export default tseslint.config(
           pathGroupsExcludedImportTypes: ["react"],
         },
       ],
-      "import/first": "error",
-      "import/newline-after-import": ["error", { count: 1 }],
-      "import/no-duplicates": "error",
+      "import-x/first": "error",
+      "import-x/newline-after-import": ["error", { count: 1 }],
+      "import-x/no-duplicates": "error",
     },
   }
 );

@@ -5,9 +5,9 @@ import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { useImageQueue } from "@/hooks/useImageQueue";
 import { fileToBase64, createImgTagWithBase64 } from "@/services/base64Service";
 import { ImageFile } from "@/services/imageService";
-import { useImageQueue } from "@/hooks/useImageQueue";
 import { extractImageFormat } from "@/utils/imageUtils";
 
 interface Base64ImageFile extends ImageFile {
@@ -25,6 +25,7 @@ export default function Base64Converter() {
     handleFilesAdded,
     handleRemoveFile,
     clearAllFiles,
+    resetSingleFile,
     handleProgress,
   } = useImageQueue<Base64ImageFile>(2);
 
@@ -76,11 +77,10 @@ export default function Base64Converter() {
     });
   };
 
-
   const convertToBase64 = async () => {
     if (files.length === 0) return;
 
-    queue.clear();
+    queue.current!.clear();
 
     setFiles((prevFiles) =>
       prevFiles.map((file) => ({
@@ -92,7 +92,7 @@ export default function Base64Converter() {
     files.forEach((imageFile, index) => {
       if (imageFile.base64String) return;
 
-      queue.enqueue({
+      queue.current!.enqueue({
         task: () => processImageFile(imageFile, index),
         onComplete: (result) => handleComplete(result, index),
         onError: (error) => handleError(error, imageFile, index),
@@ -101,8 +101,8 @@ export default function Base64Converter() {
     });
 
     setProcessingStatus({
-      waiting: queue.waiting,
-      processing: queue.active,
+      waiting: queue.current!.waiting,
+      processing: queue.current!.active,
     });
   };
 
@@ -115,7 +115,7 @@ export default function Base64Converter() {
   };
 
   const resetAllFiles = () => {
-    queue.clear();
+    queue.current!.clear();
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
         if (file.processedPreview && file.processedPreview !== file.preview) {
@@ -136,91 +136,92 @@ export default function Base64Converter() {
     );
   };
 
-
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
-        <div>
-          <h1 className="mb-4 text-2xl font-bold">Image to Base64 Converter</h1>
-          <h2 className="text-muted-foreground mb-4 text-xs">
-            Convert images to base64 encoded strings that can be used in HTML img tags or CSS
-            backgrounds
-          </h2>
+        {/* Header */}
+        <div className="mb-4">
+          <h1 className="text-2xl font-bold">Image to Base64 Converter</h1>
+          <p className="text-muted-foreground mt-1 text-xs">
+            Convert images to Base64 encoded strings for use in HTML img tags or CSS backgrounds
+          </p>
         </div>
+
         <ImageDropZone onFilesAdded={handleFilesAdded} />
 
-        <div className="space-y-6">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-wrap gap-4">
-              <Button
-                onClick={convertToBase64}
-                disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-                className="w-32"
-              >
-                {processingStatus.processing > 0 ? `Converting...` : "Convert Images"}
-              </Button>
-              <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline">
-                Reset All
-              </Button>
-              <Button
-                onClick={clearAllFiles}
-                disabled={files.length === 0}
-                variant="destructive"
-              >
-                Clear All
-              </Button>
-            </div>
-
-            <div className="text-muted-foreground text-xs">
-              {`${files.length} Uploaded `}
-              {processingStatus.processing > 0 &&
-                `• Processing ${processingStatus.processing} images`}
-              {processingStatus.waiting > 0 &&
-                `• ${processingStatus.waiting} images are waiting to be processed`}
-            </div>
+        {/* Action Toolbar */}
+        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              onClick={convertToBase64}
+              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+              size="sm"
+            >
+              {processingStatus.processing > 0 ? "Converting…" : "Convert to Base64"}
+            </Button>
+            <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline" size="sm">
+              Reset All
+            </Button>
           </div>
+          <Button
+            onClick={clearAllFiles}
+            disabled={files.length === 0}
+            variant="destructive"
+            size="sm"
+          >
+            Remove All
+          </Button>
         </div>
-
-        {files.length > 0 && (
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5">
-            {files.map((file, fileIndex) => (
-              <ImagePreview
-                key={file.name + file.preview}
-                file={file}
-                format={extractImageFormat(file.name)}
-                onRemove={() => handleRemoveFile(fileIndex)}
-                onPreview={file.base64String ? () => viewBase64Output(fileIndex) : undefined}
-                hideDownload={true}
-                extraData={
-                  file.base64String && (
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-xs flex-1"
-                      onClick={() => viewBase64Output(fileIndex)}
-                    >
-                      View Base64
-                    </Button>
-                  )
-                }
-              />
-            ))}
-          </div>
+        {(files.length > 0 || processingStatus.processing > 0) && (
+          <p className="text-muted-foreground mt-1 text-xs">
+            {files.length} file{files.length !== 1 ? "s" : ""}
+            {processingStatus.processing > 0 && ` • Converting ${processingStatus.processing}`}
+            {processingStatus.waiting > 0 && ` • ${processingStatus.waiting} waiting`}
+          </p>
         )}
-
-        {selectedFileIndex !== null &&
-          files[selectedFileIndex]?.base64String &&
-          files[selectedFileIndex]?.htmlImgTag && (
-            <Base64Modal
-              isOpen={true}
-              onClose={closeBase64Output}
-              base64String={files[selectedFileIndex].base64String}
-              htmlImgTag={files[selectedFileIndex].htmlImgTag}
-              fileName={files[selectedFileIndex].name}
-              originalSize={files[selectedFileIndex].file.size}
-            />
-          )}
       </Card>
+
+      {/* Image Grid */}
+      {files.length > 0 && (
+        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+          {files.map((file, fileIndex) => (
+            <ImagePreview
+              key={file.name + file.preview}
+              file={file}
+              format={extractImageFormat(file.name)}
+              onRemove={() => handleRemoveFile(fileIndex)}
+              onPreview={file.base64String ? () => viewBase64Output(fileIndex) : undefined}
+              hideDownload={true}
+              extraData={
+                file.base64String && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-8 flex-1 text-xs"
+                    onClick={() => resetSingleFile(fileIndex)}
+                  >
+                    Reset
+                  </Button>
+                )
+              }
+            />
+          ))}
+        </div>
+      )}
+
+      {/* Base64 output modal */}
+      {selectedFileIndex !== null &&
+        files[selectedFileIndex]?.base64String &&
+        files[selectedFileIndex]?.htmlImgTag && (
+          <Base64Modal
+            isOpen={true}
+            onClose={closeBase64Output}
+            base64String={files[selectedFileIndex].base64String}
+            htmlImgTag={files[selectedFileIndex].htmlImgTag}
+            fileName={files[selectedFileIndex].name}
+            originalSize={files[selectedFileIndex].file.size}
+          />
+        )}
     </div>
   );
 }

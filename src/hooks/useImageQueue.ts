@@ -71,6 +71,27 @@ export function useImageQueue<T extends ImageFile>(concurrency = 2) {
     setProcessingStatus({ waiting: 0, processing: 0 });
   }, []);
 
+  const resetSingleFile = useCallback((index: number) => {
+    setFiles((prev) => {
+      const file = prev[index];
+      if (!file) return prev;
+      if (file.processedPreview && file.processedPreview !== file.preview) {
+        URL.revokeObjectURL(file.processedPreview);
+      }
+      const updated = [...prev];
+      updated[index] = {
+        ...file,
+        processed: undefined,
+        processedPreview: undefined,
+        isProcessing: false,
+        isError: false,
+        newWidth: undefined,
+        newHeight: undefined,
+      };
+      return updated;
+    });
+  }, []);
+
   const handleProgress = useCallback((processing: number, waiting: number) => {
     setProcessingStatus({ waiting, processing });
   }, []);
@@ -80,10 +101,11 @@ export function useImageQueue<T extends ImageFile>(concurrency = 2) {
     setFiles,
     processingStatus,
     setProcessingStatus,
-    queue: queueRef.current,
+    queue: queueRef,
     handleFilesAdded,
     handleRemoveFile,
     clearAllFiles,
+    resetSingleFile,
     handleProgress,
   };
 }
