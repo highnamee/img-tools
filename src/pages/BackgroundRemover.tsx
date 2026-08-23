@@ -11,6 +11,13 @@ import { Switch } from "@/components/ui/switch";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile, convertImage, ResizeOptions, getImageSize } from "@/services/imageService";
 import { useImageQueue } from "@/hooks/useImageQueue";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function BackgroundRemover() {
   const {
@@ -25,6 +32,7 @@ export default function BackgroundRemover() {
     handleProgress,
   } = useImageQueue<ImageFile>(1);
   const [quality, setQuality] = useState<number>(80);
+  const [modelVariant, setModelVariant] = useState<"isnet_fp16" | "isnet" | "isnet_quint8">("isnet_fp16");
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
@@ -34,14 +42,20 @@ export default function BackgroundRemover() {
     const preloadModel = async () => {
       try {
         const { preload } = await import("@imgly/background-removal");
-        await preload({ device: "gpu" });
+        await preload({ device: "gpu", model: modelVariant });
       } catch (error) {
-        console.error("Error preloading background removal model:", error);
+        console.warn("GPU model preloading failed, trying CPU fallback:", error);
+        try {
+          const { preload } = await import("@imgly/background-removal");
+          await preload({ device: "cpu", model: modelVariant });
+        } catch (cpuError) {
+          console.error("CPU preloading failed too:", cpuError);
+        }
       }
     };
 
     void preloadModel();
-  }, []);
+  }, [modelVariant]);
   const handleViewDiff = (index: number) => {
     setSelectedFileIndex(index);
   };
@@ -73,21 +87,43 @@ export default function BackgroundRemover() {
 
     const { removeBackground } = await import("@imgly/background-removal");
 
-    const processedBlob = await removeBackground(imageFile.file, {
-      device: "gpu",
-      output: {
-        format: "image/png",
-        quality: 1,
-      },
-      progress: (key, current, total) => {
-        if (key.startsWith("fetch:")) {
-          const percentComplete = Math.round((current / total) * 100);
-          setLoadingStatus(
-            percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
-          );
-        }
-      },
-    });
+    let processedBlob;
+    try {
+      processedBlob = await removeBackground(imageFile.file, {
+        device: "gpu",
+        model: modelVariant,
+        output: {
+          format: "image/png",
+          quality: 1,
+        },
+        progress: (key, current, total) => {
+          if (key.startsWith("fetch:")) {
+            const percentComplete = Math.round((current / total) * 100);
+            setLoadingStatus(
+              percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
+            );
+          }
+        },
+      });
+    } catch (gpuError) {
+      console.warn("GPU background removal failed, trying CPU fallback:", gpuError);
+      processedBlob = await removeBackground(imageFile.file, {
+        device: "cpu",
+        model: modelVariant,
+        output: {
+          format: "image/png",
+          quality: 1,
+        },
+        progress: (key, current, total) => {
+          if (key.startsWith("fetch:")) {
+            const percentComplete = Math.round((current / total) * 100);
+            setLoadingStatus(
+              percentComplete === 100 ? "" : `Downloading model: (${percentComplete}%)`
+            );
+          }
+        },
+      });
+    }
 
     const processedFile = {
       ...imageFile,
@@ -241,6 +277,22 @@ export default function BackgroundRemover() {
                   step={1}
                   className="w-64"
                 />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Model Preset</label>
+                <Select
+                  value={modelVariant}
+                  onValueChange={(val: any) => setModelVariant(val)}
+                >
+                  <SelectTrigger className="w-56">
+                    <SelectValue placeholder="Select Preset" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="isnet_quint8">Speed (Quantized, ~22MB)</SelectItem>
+                    <SelectItem value="isnet_fp16">Balanced (16-bit, ~44MB)</SelectItem>
+                    <SelectItem value="isnet">Maximum Detail (32-bit, ~176MB)</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
               <div className="space-y-2">
                 <div className="flex items-center gap-2">
