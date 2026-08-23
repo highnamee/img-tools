@@ -228,6 +228,7 @@ export default function ImageMetadataRemover() {
                 file={file}
                 format={extractImageFormat(file.name)}
                 onRemove={() => handleRemoveFile(fileIndex)}
+                onPreview={file.metadata && file.metadata.length > 0 ? () => handleShowAllMetadata(fileIndex) : undefined}
                 extraData={
                   file.metadata && file.metadata.length > 0 ? (
                     <div className="space-y-1">
@@ -237,12 +238,12 @@ export default function ImageMetadataRemover() {
                           <span className="text-muted-foreground ml-2">{field.value}</span>
                         </div>
                       ))}
-                      <div className="flex flex-wrap gap-2">
+                      <div className="flex gap-2 pt-2">
                         {file.coordinates && (
                           <Button
                             variant="outline"
                             size="sm"
-                            className="mt-2 text-xs"
+                            className="h-8 text-xs flex-1"
                             onClick={() => openInGoogleMaps(file.coordinates!)}
                           >
                             View on Map 🗺️
@@ -252,7 +253,7 @@ export default function ImageMetadataRemover() {
                           <Button
                             variant="outline"
                             size="sm"
-                            className="mt-2 text-xs"
+                            className="h-8 text-xs flex-1"
                             onClick={() => handleShowAllMetadata(fileIndex)}
                           >
                             Show all ({file.metadata.length})

@@ -386,12 +386,13 @@ export default function BackgroundRemover() {
                 file={file}
                 format="png"
                 onRemove={() => handleRemoveFile(fileIndex)}
+                onPreview={file.processed ? () => handleViewDiff(fileIndex) : undefined}
                 extraData={
                   file.processed && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-2"
+                      className="h-8 text-xs flex-1"
                       onClick={() => handleViewDiff(fileIndex)}
                     >
                       View Diff

@@ -13,6 +13,7 @@ interface ImagePreviewProps {
   readonly file: ImageFile;
   readonly format: ConversionFormat;
   readonly onRemove: () => void;
+  readonly onPreview?: () => void;
   readonly extraData?: ReactNode;
   readonly hideDownload?: boolean;
   readonly showSizeInfo?: boolean;
@@ -23,6 +24,7 @@ export function ImagePreview({
   file,
   format,
   onRemove,
+  onPreview,
   extraData,
   hideDownload,
   showSizeInfo = true,
@@ -50,27 +52,28 @@ export function ImagePreview({
 
   return (
     <Card className="relative gap-4 overflow-hidden pt-0 pb-4">
-      <div className="group relative h-36 w-full bg-muted/10 flex items-center justify-center border-b">
+      <div
+        className={cn(
+          "group relative h-36 w-full bg-muted/10 flex items-center justify-center border-b overflow-hidden",
+          onPreview && "cursor-pointer"
+        )}
+        onClick={onPreview}
+      >
         <img
           src={file.processedPreview ?? file.preview}
           alt={file.name}
-          className="h-full w-full object-contain"
+          className="h-full w-full object-contain transition-transform duration-300 group-hover:scale-105"
         />
         {file.isProcessing && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/50">
             <Loader2 className="h-8 w-8 animate-spin text-white" />
           </div>
         )}
-        {!file.isProcessing && (
-          <div className="absolute inset-0 flex items-center justify-center gap-2 bg-black/50 opacity-0 transition-opacity group-hover:opacity-100">
-            {!hideDownload && !file.isError && (
-              <Button variant="secondary" size="sm" onClick={handleDownload}>
-                Download
-              </Button>
-            )}
-            <Button variant="destructive" size="sm" onClick={onRemove}>
-              Remove
-            </Button>
+        {!file.isProcessing && onPreview && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black/25 opacity-0 transition-opacity group-hover:opacity-100">
+            <span className="text-white text-[10px] font-medium bg-black/60 px-2 py-1 rounded tracking-wide uppercase">
+              Click to Preview
+            </span>
           </div>
         )}
       </div>
@@ -99,7 +102,22 @@ export function ImagePreview({
             </span>
           )}
         </div>
-        {extraData}
+        <div className="flex gap-2 pt-2">
+          {!hideDownload && file.processed && (
+            <Button variant="outline" size="sm" className="h-8 text-xs flex-1" onClick={handleDownload}>
+              Download
+            </Button>
+          )}
+          {extraData}
+          <Button
+            variant="outline"
+            size="sm"
+            className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex-1 border-destructive/20"
+            onClick={onRemove}
+          >
+            Remove
+          </Button>
+        </div>
       </div>
     </Card>
   );

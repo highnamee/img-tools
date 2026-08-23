@@ -189,13 +189,14 @@ export default function Base64Converter() {
                 file={file}
                 format={extractImageFormat(file.name)}
                 onRemove={() => handleRemoveFile(fileIndex)}
+                onPreview={file.base64String ? () => viewBase64Output(fileIndex) : undefined}
                 hideDownload={true}
                 extraData={
                   file.base64String && (
                     <Button
                       variant="outline"
                       size="sm"
-                      className="mt-2"
+                      className="h-8 text-xs flex-1"
                       onClick={() => viewBase64Output(fileIndex)}
                     >
                       View Base64
