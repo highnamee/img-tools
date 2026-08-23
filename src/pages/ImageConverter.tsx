@@ -1,11 +1,11 @@
-import { useState, ChangeEvent } from "react";
+import { useState } from "react";
 
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
+import { ResizeControl } from "@/components/ResizeControl";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -14,15 +14,14 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Switch } from "@/components/ui/switch";
 import { useImageQueue } from "@/hooks/useImageQueue";
+import { useResizeControl } from "@/hooks/useResizeControl";
 import { downloadAllFiles } from "@/services/fileService";
 import {
   ImageFile,
   ConversionFormat,
   convertImage,
   formatRecommendations,
-  ResizeOptions,
   getImageSize,
 } from "@/services/imageService";
 
@@ -41,26 +40,12 @@ export default function ImageConverter() {
   } = useImageQueue<ImageFile>(2);
   const [format, setFormat] = useState<ConversionFormat>("jpeg");
   const [quality, setQuality] = useState(85);
-  const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
-  const [enableResize, setEnableResize] = useState(false);
+  const resize = useResizeControl();
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   const handleFormatChange = (newFormat: ConversionFormat) => {
     setFormat(newFormat);
     setQuality(formatRecommendations[newFormat].defaultQuality);
-  };
-  const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResizeOptions(() => ({
-      height: 0,
-      width: e.target.value ? parseInt(e.target.value) : 0,
-    }));
-  };
-
-  const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setResizeOptions(() => ({
-      height: e.target.value ? parseInt(e.target.value) : 0,
-      width: 0,
-    }));
   };
 
   const processImageFile = async (imageFile: ImageFile, index: number) => {
@@ -78,7 +63,7 @@ export default function ImageConverter() {
       imageFile,
       format,
       quality,
-      enableResize ? resizeOptions : undefined
+      resize.activeOptions
     );
 
     const { width: newWidth, height: newHeight } = await getImageSize(processedBlob);
@@ -242,38 +227,12 @@ export default function ImageConverter() {
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center gap-2">
-                <Switch checked={enableResize} onCheckedChange={setEnableResize} />
-                <label className="text-sm font-medium">Resize</label>
-              </div>
-              {enableResize && (
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <Input
-                      type="number"
-                      placeholder="Width px"
-                      value={resizeOptions.width || ""}
-                      onChange={handleWidthChange}
-                      className="w-28"
-                      disabled={!!resizeOptions.height}
-                    />
-                    <span className="text-muted-foreground text-xs">or</span>
-                    <Input
-                      type="number"
-                      placeholder="Height px"
-                      value={resizeOptions.height || ""}
-                      onChange={handleHeightChange}
-                      className="w-28"
-                      disabled={!!resizeOptions.width}
-                    />
-                  </div>
-                  <p className="text-muted-foreground text-xs">
-                    Aspect ratio maintained automatically
-                  </p>
-                </div>
-              )}
-            </div>
+            <ResizeControl
+              enabled={resize.enabled}
+              onEnabledChange={resize.setEnabled}
+              value={resize.options}
+              onChange={resize.setOptions}
+            />
           </div>
         </div>
 
