@@ -67,8 +67,10 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
   return (
     <div
       className={cn(
-        "flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-colors",
-        isDragging ? "border-primary bg-primary/10" : "border-muted-foreground/25"
+        "flex h-48 w-full cursor-pointer flex-col items-center justify-center rounded-lg border-2 border-dashed p-4 transition-all duration-200",
+        isDragging
+          ? "border-primary bg-primary/10 scale-[0.99]"
+          : "border-muted-foreground/25 hover:border-primary/50 hover:bg-muted/30"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -107,7 +109,7 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
         <p className="text-muted-foreground text-sm font-medium">
           Drag and drop images here, or click to select files
         </p>
-        <p className="text-muted-foreground text-xs">Supports PNG, JPEG, WebP, AVIF, BMP, TIFF</p>
+        <p className="text-muted-foreground text-xs">Supports PNG, JPEG, WebP, BMP, TIFF</p>
       </label>
     </div>
   );

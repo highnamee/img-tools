@@ -253,8 +253,14 @@ export default function BackgroundRemover() {
             portraits, and more.
           </h2>
         </div>
-
         <ImageDropZone onFilesAdded={handleFilesAdded} />
+
+        {loadingStatus && (
+          <div className="bg-primary/5 text-primary border-primary/20 flex items-center gap-3 rounded-lg border p-4 text-sm animate-pulse mt-4">
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+            <span>{loadingStatus}</span>
+          </div>
+        )}
 
         <div className="space-y-6">
           <div className="flex flex-col gap-6">
