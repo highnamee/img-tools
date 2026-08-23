@@ -205,6 +205,19 @@ export default function ImageMetadataRemover() {
     );
   };
 
+  const clearAllFiles = () => {
+    if (queueRef.current) {
+      queueRef.current.clear();
+    }
+    files.forEach((file) => {
+      URL.revokeObjectURL(file.preview);
+      if (file.processedPreview) {
+        URL.revokeObjectURL(file.processedPreview);
+      }
+    });
+    setFiles([]);
+  };
+
   return (
     <div className="container mx-auto py-8">
       <Card className="p-6">
@@ -239,7 +252,7 @@ export default function ImageMetadataRemover() {
                 Reset All
               </Button>
               <Button
-                onClick={() => setFiles([])}
+                onClick={clearAllFiles}
                 disabled={files.length === 0}
                 variant="destructive"
               >
