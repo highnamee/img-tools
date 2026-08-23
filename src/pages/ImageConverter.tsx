@@ -38,8 +38,8 @@ export default function ImageConverter() {
     clearAllFiles,
     handleProgress,
   } = useImageQueue<ImageFile>(2);
-  const [format, setFormat] = useState<ConversionFormat>("png");
-  const [quality, setQuality] = useState(80);
+  const [format, setFormat] = useState<ConversionFormat>("jpeg");
+  const [quality, setQuality] = useState(85);
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);

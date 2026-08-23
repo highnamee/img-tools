@@ -50,7 +50,7 @@ export function ImagePreview({
 
   return (
     <Card className="relative gap-4 overflow-hidden pt-0 pb-4">
-      <div className="group relative aspect-square">
+      <div className="group relative h-36 w-full bg-muted/10 flex items-center justify-center border-b">
         <img
           src={file.processedPreview ?? file.preview}
           alt={file.name}
@@ -79,21 +79,26 @@ export function ImagePreview({
           {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
         </p>
         <Badge className={cn(badgeColor, "rounded-sm")}>{badgeText}</Badge>
-        {showSizeInfo && (
-          <p className="text-muted-foreground text-xs">
-            {file.processed
-              ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.processed.size)}`
-              : formatFileSize(file.file.size)}
-          </p>
-        )}
-        {showDimensionsInfo && file.originalWidth && file.originalHeight && (
-          <p className="text-muted-foreground text-xs">
-            <span>{formatDimensions(file.originalWidth, file.originalHeight)} </span>
-            {file.newWidth && file.newHeight && (
-              <span> → {formatDimensions(file.newWidth, file.newHeight)}</span>
-            )}
-          </p>
-        )}
+        <div className="text-muted-foreground text-xs flex flex-wrap items-center gap-x-2 gap-y-1">
+          {showSizeInfo && (
+            <span>
+              {file.processed
+                ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.processed.size)}`
+                : formatFileSize(file.file.size)}
+            </span>
+          )}
+          {showSizeInfo && showDimensionsInfo && file.originalWidth && file.originalHeight && (
+            <span className="text-muted-foreground/40">•</span>
+          )}
+          {showDimensionsInfo && file.originalWidth && file.originalHeight && (
+            <span>
+              {formatDimensions(file.originalWidth, file.originalHeight)}
+              {file.newWidth && file.newHeight && (
+                ` → ${formatDimensions(file.newWidth, file.newHeight)}`
+              )}
+            </span>
+          )}
+        </div>
         {extraData}
       </div>
     </Card>

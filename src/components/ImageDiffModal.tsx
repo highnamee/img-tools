@@ -25,7 +25,7 @@ export function ImageDiffModal({
   newWidth,
   newHeight,
 }: Readonly<ImageDiffModalProps>) {
-  const [scale, setScale] = useState(100);
+  const [scale, setScale] = useState(50);
 
   const getScaledDimensions = (width: number, height: number, scale: number) => {
     return {
@@ -87,32 +87,32 @@ export function ImageDiffModal({
             </div>
           </div>
           <ScrollArea className="h-[60vh] sm:h-[80vh]">
-            <div className="space-y-4">
-              <div className="space-y-2">
-                <h3 className="font-medium">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 p-1">
+              <div className="space-y-2 md:border-r md:pr-8 md:border-border">
+                <h3 className="font-medium text-sm">
                   Original ({originalWidth}×{originalHeight})
                 </h3>
-                <div className="w-[80vw] overflow-auto sm:max-w-[1200px]">
+                <div className="w-full overflow-auto border rounded-lg p-2 bg-muted/5 flex items-center justify-center">
                   <img
                     src={originalSrc}
                     alt="Original"
                     width={originalScaled.width}
                     height={originalScaled.height}
-                    className="max-w-none"
+                    className="max-w-none rounded"
                   />
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-medium">
+                <h3 className="font-medium text-sm">
                   Processed ({newWidth}×{newHeight})
                 </h3>
-                <div className="w-[80vw] overflow-auto sm:max-w-[1200px]">
+                <div className="w-full overflow-auto border rounded-lg p-2 bg-muted/5 flex items-center justify-center">
                   <img
                     src={processedSrc}
                     alt="Processed"
                     width={processedScaled.width}
                     height={processedScaled.height}
-                    className="max-w-none"
+                    className="max-w-none rounded"
                   />
                 </div>
               </div>
