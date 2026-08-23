@@ -18,7 +18,7 @@ export default function Layout() {
   return (
     <div className="bg-background flex min-h-screen flex-col">
       <Header />
-      <main className="container mx-auto flex-grow px-4 py-8">
+      <main className="container mx-auto grow p-4">
         <Outlet />
       </main>
       <Footer />

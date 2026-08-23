@@ -102,21 +102,23 @@ export function ImagePreview({
             </span>
           )}
         </div>
-        <div className="flex gap-2 pt-2">
-          {!hideDownload && file.processed && (
-            <Button variant="outline" size="sm" className="h-8 text-xs flex-1" onClick={handleDownload}>
-              Download
-            </Button>
-          )}
+        <div className="flex flex-col gap-2 pt-2">
           {extraData}
-          <Button
-            variant="outline"
-            size="sm"
-            className="h-8 text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex-1 border-destructive/20"
-            onClick={onRemove}
-          >
-            Remove
-          </Button>
+          <div className="flex gap-2">
+            {!hideDownload && file.processed && (
+              <Button variant="outline" size="sm" className="text-xs flex-1" onClick={handleDownload}>
+                Download
+              </Button>
+            )}
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-xs text-destructive hover:bg-destructive/10 hover:text-destructive flex-1 border-destructive/20"
+              onClick={onRemove}
+            >
+              Remove
+            </Button>
+          </div>
         </div>
       </div>
     </Card>

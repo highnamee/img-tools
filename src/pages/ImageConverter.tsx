@@ -1,11 +1,18 @@
 import { useState } from "react";
 
+import {
+  Download,
+  ImagePlay,
+  RotateCcw,
+  Trash2,
+} from "lucide-react";
+
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
 import { ResizeControl } from "@/components/ResizeControl";
+import { ToolLayout } from "@/components/ToolLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
 import {
   Select,
   SelectContent,
@@ -14,6 +21,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useImageQueue } from "@/hooks/useImageQueue";
 import { useResizeControl } from "@/hooks/useResizeControl";
 import { downloadAllFiles } from "@/services/fileService";
@@ -51,26 +59,14 @@ export default function ImageConverter() {
   const processImageFile = async (imageFile: ImageFile, index: number) => {
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
-      updatedFiles[index] = {
-        ...updatedFiles[index],
-        isProcessing: true,
-        isError: false,
-      };
+      updatedFiles[index] = { ...updatedFiles[index], isProcessing: true, isError: false };
       return updatedFiles;
     });
 
-    const processedBlob = await convertImage(
-      imageFile,
-      format,
-      quality,
-      resize.activeOptions
-    );
-
+    const processedBlob = await convertImage(imageFile, format, quality, resize.activeOptions);
     const { width: newWidth, height: newHeight } = await getImageSize(processedBlob);
 
-    if (imageFile.processedPreview) {
-      URL.revokeObjectURL(imageFile.processedPreview);
-    }
+    if (imageFile.processedPreview) URL.revokeObjectURL(imageFile.processedPreview);
 
     return {
       ...imageFile,
@@ -95,29 +91,17 @@ export default function ImageConverter() {
     console.error(`Error converting image ${imageFile.name}:`, error);
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
-      updatedFiles[index] = {
-        ...updatedFiles[index],
-        isProcessing: false,
-        isError: true,
-      };
+      updatedFiles[index] = { ...updatedFiles[index], isProcessing: false, isError: true };
       return updatedFiles;
     });
   };
 
-
   const convertImages = async () => {
     queue.current!.clear();
-
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        isError: false,
-      }))
-    );
+    setFiles((prevFiles) => prevFiles.map((file) => ({ ...file, isError: false })));
 
     files.forEach((imageFile, index) => {
       if (imageFile.processed) return;
-
       queue.current!.enqueue({
         task: () => processImageFile(imageFile, index),
         onComplete: (result) => handleComplete(result, index),
@@ -144,17 +128,11 @@ export default function ImageConverter() {
     }
   };
 
-  const handleViewDiff = (index: number) => {
-    setSelectedFileIndex(index);
-  };
-
   const resetAllFiles = () => {
     queue.current!.clear();
     setFiles((prevFiles) =>
       prevFiles.map((file) => {
-        if (file.processedPreview) {
-          URL.revokeObjectURL(file.processedPreview);
-        }
+        if (file.processedPreview) URL.revokeObjectURL(file.processedPreview);
         return {
           ...file,
           processed: undefined,
@@ -168,30 +146,31 @@ export default function ImageConverter() {
     );
   };
 
-
   return (
-    <div className="container mx-auto py-8">
-      <Card className="p-6">
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold">Image Converter</h1>
-          <p className="text-muted-foreground mt-1 text-xs">
-            Convert images between different formats with options to adjust quality and resize
-            dimensions
-          </p>
-        </div>
+    <ToolLayout
+      leftPanel={
+        <>
+          <div>
+            <h1 className="text-2xl font-bold">Image Converter</h1>
+            <p className="text-muted-foreground mt-1 text-xs">
+              Convert images between formats with quality and resize options
+            </p>
+          </div>
 
-        <ImageDropZone onFilesAdded={handleFilesAdded} />
+          <hr className="border-border/60" />
 
-        <div className="bg-muted/30 border-border mt-6 rounded-xl border p-4">
-          <p className="text-muted-foreground mb-4 text-xs font-semibold uppercase tracking-wider">Settings</p>
-          <div className="flex flex-wrap items-start gap-8">
+          <div className="space-y-5">
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+              Settings
+            </p>
+
             <div className="space-y-2">
               <label className="text-sm font-medium">Output Format</label>
               <Select
                 value={format}
                 onValueChange={(value) => handleFormatChange(value as ConversionFormat)}
               >
-                <SelectTrigger className="w-44">
+                <SelectTrigger className="w-full">
                   <SelectValue placeholder="Select format" />
                 </SelectTrigger>
                 <SelectContent>
@@ -223,7 +202,7 @@ export default function ImageConverter() {
                 min={1}
                 max={100}
                 step={1}
-                className="w-56"
+                className="w-full"
               />
             </div>
 
@@ -234,62 +213,103 @@ export default function ImageConverter() {
               onChange={resize.setOptions}
             />
           </div>
-        </div>
 
-        <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={convertImages}
-              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-              size="sm"
-            >
-              {processingStatus.processing > 0 ? "Converting…" : "Convert Images"}
-            </Button>
-            <Button
-              onClick={downloadAll}
-              disabled={!files.some((f) => f.processed)}
-              variant="outline"
-              size="sm"
-            >
-              Download All
-            </Button>
-            <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline" size="sm">
-              Reset All
-            </Button>
+          <hr className="border-border/60" />
+
+          <div className="space-y-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={convertImages}
+                  disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+                  size="default"
+                  className="w-full"
+                >
+                  <ImagePlay className="mr-2 h-4 w-4" />
+                  {processingStatus.processing > 0 ? "Converting…" : "Convert Images"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Convert all queued images to the selected format</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={downloadAll}
+                  disabled={!files.some((f) => f.processed)}
+                  variant="outline"
+                  size="default"
+                  className="w-full"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download All
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Download all successfully converted images as a ZIP</TooltipContent>
+            </Tooltip>
+
+            <div className="flex gap-2 pt-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={resetAllFiles}
+                    disabled={files.length === 0}
+                    variant="outline"
+                    size="default"
+                    className="flex-1"
+                  >
+                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                    Reset All
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Discard all conversion results and revert to originals</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={clearAllFiles}
+                    disabled={files.length === 0}
+                    variant="destructive"
+                    size="default"
+                    className="flex-1"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Remove All
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Remove all files from the queue</TooltipContent>
+              </Tooltip>
+            </div>
           </div>
-          <Button
-            onClick={clearAllFiles}
-            disabled={files.length === 0}
-            variant="destructive"
-            size="sm"
-          >
-            Remove All
-          </Button>
-        </div>
-        {(files.length > 0 || processingStatus.processing > 0) && (
-          <p className="text-muted-foreground mt-1 text-xs">
-            {files.length} file{files.length !== 1 ? "s" : ""}
-            {processingStatus.processing > 0 && ` • Converting ${processingStatus.processing}`}
-            {processingStatus.waiting > 0 && ` • ${processingStatus.waiting} waiting`}
-          </p>
-        )}
-      </Card>
+
+          {(files.length > 0 || processingStatus.processing > 0) && (
+            <p className="text-muted-foreground text-xs">
+              {files.length} file{files.length !== 1 ? "s" : ""}
+              {processingStatus.processing > 0 && ` • Converting ${processingStatus.processing}`}
+              {processingStatus.waiting > 0 && ` • ${processingStatus.waiting} waiting`}
+            </p>
+          )}
+        </>
+      }
+    >
+      <ImageDropZone onFilesAdded={handleFilesAdded} />
 
       {files.length > 0 && (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
           {files.map((file, fileIndex) => (
             <ImagePreview
               key={file.name + file.preview}
               file={file}
               format={format}
               onRemove={() => handleRemoveFile(fileIndex)}
-              onPreview={file.processed ? () => handleViewDiff(fileIndex) : undefined}
+              onPreview={file.processed ? () => setSelectedFileIndex(fileIndex) : undefined}
               extraData={
                 file.processed && (
                   <Button
                     variant="outline"
                     size="sm"
-                    className="h-8 text-xs flex-1"
+                    className="w-full text-xs"
                     onClick={() => resetSingleFile(fileIndex)}
                   >
                     Reset
@@ -313,6 +333,6 @@ export default function ImageConverter() {
           newHeight={files[selectedFileIndex].newHeight ?? 0}
         />
       )}
-    </div>
+    </ToolLayout>
   );
 }

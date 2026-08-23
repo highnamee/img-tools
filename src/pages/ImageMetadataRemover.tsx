@@ -1,10 +1,13 @@
 import { useState } from "react";
 
+import { Download, RotateCcw, ScanSearch, Trash2 } from "lucide-react";
+
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImageMetadataModal } from "@/components/ImageMetadataModal";
 import { ImagePreview } from "@/components/ImagePreview";
+import { ToolLayout } from "@/components/ToolLayout";
 import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useImageQueue } from "@/hooks/useImageQueue";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile } from "@/services/imageService";
@@ -40,14 +43,6 @@ export default function ImageMetadataRemover() {
     setFiles((prev) => [...prev, ...filesWithMetadata]);
   };
 
-  const handleShowAllMetadata = (index: number) => {
-    setSelectedFileIndex(index);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedFileIndex(null);
-  };
-
   const processImageFile = async (file: ImageWithMetadata, index: number) => {
     setFiles((prevFiles) => {
       const updatedFiles = [...prevFiles];
@@ -56,10 +51,7 @@ export default function ImageMetadataRemover() {
     });
 
     const processedBlob = await removeMetadata(file.file);
-
-    if (file.processedPreview) {
-      URL.revokeObjectURL(file.processedPreview);
-    }
+    if (file.processedPreview) URL.revokeObjectURL(file.processedPreview);
 
     return {
       ...file,
@@ -89,14 +81,10 @@ export default function ImageMetadataRemover() {
 
   const processImages = async () => {
     queue.current!.clear();
-
-    setFiles((prevFiles) =>
-      prevFiles.map((file) => ({ ...file, isError: false }))
-    );
+    setFiles((prevFiles) => prevFiles.map((file) => ({ ...file, isError: false })));
 
     files.forEach((file, index) => {
       if (file.processed) return;
-
       queue.current!.enqueue({
         task: () => processImageFile(file, index),
         onComplete: (result) => handleComplete(result, index),
@@ -143,62 +131,100 @@ export default function ImageMetadataRemover() {
   };
 
   return (
-    <div className="container mx-auto py-8">
-      <Card className="p-6">
-        {/* Header */}
-        <div className="mb-4">
-          <h1 className="text-2xl font-bold">Image Metadata Remover</h1>
-          <p className="text-muted-foreground mt-1 text-xs">
-            View and strip metadata from your images — including GPS coordinates, camera info, and
-            other sensitive data
-          </p>
-        </div>
-
-        <ImageDropZone onFilesAdded={handleFilesAdded} />
-
-        {/* Action Toolbar */}
-        <div className="mt-6 flex flex-wrap items-center justify-between gap-3">
-          <div className="flex flex-wrap gap-2">
-            <Button
-              onClick={processImages}
-              disabled={files.length === 0 || files.some((f) => f.isProcessing)}
-              size="sm"
-            >
-              {processingStatus.processing > 0 ? "Removing…" : "Remove Metadata"}
-            </Button>
-            <Button
-              onClick={downloadAll}
-              disabled={!files.some((f) => f.processed)}
-              variant="outline"
-              size="sm"
-            >
-              Download All
-            </Button>
-            <Button onClick={resetAllFiles} disabled={files.length === 0} variant="outline" size="sm">
-              Reset All
-            </Button>
+    <ToolLayout
+      leftPanel={
+        <>
+          <div>
+            <h1 className="text-2xl font-bold">Metadata Remover</h1>
+            <p className="text-muted-foreground mt-1 text-xs">
+              View and strip metadata from images — GPS coordinates, camera info, and other
+              sensitive data
+            </p>
           </div>
-          <Button
-            onClick={clearAllFiles}
-            disabled={files.length === 0}
-            variant="destructive"
-            size="sm"
-          >
-            Remove All
-          </Button>
-        </div>
-        {(files.length > 0 || processingStatus.processing > 0) && (
-          <p className="text-muted-foreground mt-1 text-xs">
-            {files.length} file{files.length !== 1 ? "s" : ""}
-            {processingStatus.processing > 0 && ` • Processing ${processingStatus.processing}`}
-            {processingStatus.waiting > 0 && ` • ${processingStatus.waiting} waiting`}
-          </p>
-        )}
-      </Card>
 
-      {/* Image Grid */}
+          <hr className="border-border/60" />
+
+          <div className="space-y-2">
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={processImages}
+                  disabled={files.length === 0 || files.some((f) => f.isProcessing)}
+                  size="default"
+                  className="w-full"
+                >
+                  <ScanSearch className="mr-2 h-4 w-4" />
+                  {processingStatus.processing > 0 ? "Removing…" : "Remove Metadata"}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Strip all metadata (GPS, camera info, etc.) from images</TooltipContent>
+            </Tooltip>
+
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  onClick={downloadAll}
+                  disabled={!files.some((f) => f.processed)}
+                  variant="outline"
+                  size="default"
+                  className="w-full"
+                >
+                  <Download className="mr-2 h-4 w-4" />
+                  Download All
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side="right">Download all processed images as a ZIP</TooltipContent>
+            </Tooltip>
+
+            <div className="flex gap-2 pt-1">
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={resetAllFiles}
+                    disabled={files.length === 0}
+                    variant="outline"
+                    size="default"
+                    className="flex-1"
+                  >
+                    <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+                    Reset All
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Discard processed results and revert to originals</TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    onClick={clearAllFiles}
+                    disabled={files.length === 0}
+                    variant="destructive"
+                    size="default"
+                    className="flex-1"
+                  >
+                    <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+                    Remove All
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side="right">Remove all files from the queue</TooltipContent>
+              </Tooltip>
+            </div>
+          </div>
+
+          {(files.length > 0 || processingStatus.processing > 0) && (
+            <p className="text-muted-foreground text-xs">
+              {files.length} file{files.length !== 1 ? "s" : ""}
+              {processingStatus.processing > 0 && ` • Processing ${processingStatus.processing}`}
+              {processingStatus.waiting > 0 && ` • ${processingStatus.waiting} waiting`}
+            </p>
+          )}
+        </>
+      }
+    >
+      <ImageDropZone onFilesAdded={handleFilesAdded} />
+
       {files.length > 0 && (
-        <div className="mt-6 grid grid-cols-1 gap-4 md:grid-cols-3 lg:grid-cols-4 2xl:grid-cols-5 3xl:grid-cols-6">
+        <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
           {files.map((file, fileIndex) => (
             <ImagePreview
               key={file.name + file.preview}
@@ -207,7 +233,7 @@ export default function ImageMetadataRemover() {
               onRemove={() => handleRemoveFile(fileIndex)}
               onPreview={
                 file.metadata && file.metadata.length > 0
-                  ? () => handleShowAllMetadata(fileIndex)
+                  ? () => setSelectedFileIndex(fileIndex)
                   : undefined
               }
               extraData={
@@ -224,7 +250,7 @@ export default function ImageMetadataRemover() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 flex-1 text-xs"
+                          className="w-full text-xs"
                           onClick={() => openInGoogleMaps(file.coordinates!)}
                         >
                           View on Map 🗺️
@@ -234,8 +260,8 @@ export default function ImageMetadataRemover() {
                         <Button
                           variant="outline"
                           size="sm"
-                          className="h-8 flex-1 text-xs"
-                          onClick={() => handleShowAllMetadata(fileIndex)}
+                          className="w-full text-xs"
+                          onClick={() => setSelectedFileIndex(fileIndex)}
                         >
                           Show all ({file.metadata.length})
                         </Button>
@@ -249,14 +275,13 @@ export default function ImageMetadataRemover() {
         </div>
       )}
 
-      {/* Metadata modal */}
       {selectedFileIndex !== null && files[selectedFileIndex]?.metadata && (
         <ImageMetadataModal
           isOpen={true}
-          onClose={handleCloseModal}
+          onClose={() => setSelectedFileIndex(null)}
           metadata={files[selectedFileIndex].metadata}
         />
       )}
-    </div>
+    </ToolLayout>
   );
 }

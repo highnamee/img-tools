@@ -97,9 +97,9 @@ export function ImageDiffModal({
             </div>
           </div>
           <ScrollArea className="h-[60vh] sm:h-[80vh]">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 md:gap-12 p-1">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 p-1">
               <div className="space-y-2 md:border-r md:pr-8 md:border-border">
-                <h3 className="font-medium text-sm">
+                <h3 className="font-medium text-sm mb-1">
                   Original ({originalWidth}×{originalHeight})
                 </h3>
                 <div className="w-full overflow-auto border rounded-lg p-2 bg-muted/5 flex items-center justify-center">
@@ -113,7 +113,7 @@ export function ImageDiffModal({
                 </div>
               </div>
               <div className="space-y-2">
-                <h3 className="font-medium text-sm">
+                <h3 className="font-medium text-sm mb-1">
                   Processed ({newWidth}×{newHeight})
                 </h3>
                 <div className="w-full overflow-auto border rounded-lg p-2 bg-muted/5 flex items-center justify-center">
