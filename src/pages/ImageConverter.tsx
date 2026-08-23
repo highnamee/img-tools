@@ -1,4 +1,4 @@
-import { useState, useEffect, ChangeEvent } from "react";
+import { useState, ChangeEvent } from "react";
 
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -41,9 +41,10 @@ export default function ImageConverter() {
     processing: 0,
   });
 
-  useEffect(() => {
-    setQuality(formatRecommendations[format].defaultQuality);
-  }, [format]);
+  const handleFormatChange = (newFormat: ConversionFormat) => {
+    setFormat(newFormat);
+    setQuality(formatRecommendations[newFormat].defaultQuality);
+  };
 
   const handleFilesAdded = (newFiles: ImageFile[]) => {
     setFiles((prev) => [...prev, ...newFiles]);
@@ -198,7 +199,7 @@ export default function ImageConverter() {
                 <label className="text-sm font-medium">Output Format</label>
                 <Select
                   value={format}
-                  onValueChange={(value) => setFormat(value as ConversionFormat)}
+                  onValueChange={(value) => handleFormatChange(value as ConversionFormat)}
                 >
                   <SelectTrigger className="w-52">
                     <SelectValue placeholder="Select format" />
