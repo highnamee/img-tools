@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { Base64Modal } from "@/components/Base64Modal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -17,6 +17,22 @@ interface Base64ImageFile extends ImageFile {
 
 export default function Base64Converter() {
   const [files, setFiles] = useState<Base64ImageFile[]>([]);
+
+  const filesRef = useRef(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((file) => {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      });
+    };
+  }, []);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
   const [processingStatus, setProcessingStatus] = useState<{
     waiting: number;
@@ -31,7 +47,16 @@ export default function Base64Converter() {
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFiles((prev) => {
+      const file = prev[index];
+      if (file) {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const processImageFile = async (imageFile: Base64ImageFile, index: number) => {
@@ -51,6 +76,7 @@ export default function Base64Converter() {
     return {
       ...imageFile,
       processed: imageFile.file,
+      processedPreview: imageFile.preview,
       base64String,
       htmlImgTag,
       isProcessing: false,
@@ -122,16 +148,22 @@ export default function Base64Converter() {
 
   const resetAllFiles = () => {
     setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-        base64String: undefined,
-        htmlImgTag: undefined,
-      }))
+      prevFiles.map((file) => {
+        if (file.processedPreview && file.processedPreview !== file.preview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+        return {
+          ...file,
+          processed: undefined,
+          processedPreview: undefined,
+          isProcessing: false,
+          isError: false,
+          newWidth: undefined,
+          newHeight: undefined,
+          base64String: undefined,
+          htmlImgTag: undefined,
+        };
+      })
     );
   };
 

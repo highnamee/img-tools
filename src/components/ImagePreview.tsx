@@ -52,7 +52,7 @@ export function ImagePreview({
     <Card className="relative gap-4 overflow-hidden pt-0 pb-4">
       <div className="group relative aspect-square">
         <img
-          src={file.processed ? URL.createObjectURL(file.processed) : file.preview}
+          src={file.processedPreview ?? file.preview}
           alt={file.name}
           className="h-full w-full object-contain"
         />

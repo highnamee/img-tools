@@ -1,4 +1,4 @@
-import { useState, ChangeEvent, useEffect } from "react";
+import { useState, useRef, useEffect, ChangeEvent } from "react";
 
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -14,6 +14,22 @@ import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function BackgroundRemover() {
   const [files, setFiles] = useState<ImageFile[]>([]);
+
+  const filesRef = useRef(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((file) => {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      });
+    };
+  }, []);
   const [quality, setQuality] = useState<number>(80);
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
   const [enableResize, setEnableResize] = useState(false);
@@ -45,7 +61,16 @@ export default function BackgroundRemover() {
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFiles((prev) => {
+      const file = prev[index];
+      if (file) {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleViewDiff = (index: number) => {
@@ -112,9 +137,14 @@ export default function BackgroundRemover() {
 
     const { width: newWidth, height: newHeight } = await getImageSize(compressedBlob);
 
+    if (imageFile.processedPreview) {
+      URL.revokeObjectURL(imageFile.processedPreview);
+    }
+
     return {
       ...imageFile,
       processed: compressedBlob,
+      processedPreview: URL.createObjectURL(compressedBlob),
       newWidth,
       newHeight,
       isProcessing: false,
@@ -192,14 +222,20 @@ export default function BackgroundRemover() {
 
   const resetAllFiles = () => {
     setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-      }))
+      prevFiles.map((file) => {
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+        return {
+          ...file,
+          processed: undefined,
+          processedPreview: undefined,
+          isProcessing: false,
+          isError: false,
+          newWidth: undefined,
+          newHeight: undefined,
+        };
+      })
     );
   };
 
@@ -346,7 +382,7 @@ export default function BackgroundRemover() {
             isOpen={true}
             onClose={() => setSelectedFileIndex(null)}
             originalSrc={files[selectedFileIndex].preview}
-            processedSrc={URL.createObjectURL(files[selectedFileIndex].processed)}
+            processedSrc={files[selectedFileIndex].processedPreview ?? ""}
             originalWidth={files[selectedFileIndex].originalWidth ?? 0}
             originalHeight={files[selectedFileIndex].originalHeight ?? 0}
             newWidth={files[selectedFileIndex].newWidth ?? 0}

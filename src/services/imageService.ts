@@ -4,6 +4,7 @@ export interface ImageFile {
   file: File;
   name: string;
   preview: string;
+  processedPreview?: string;
   originalWidth?: number;
   originalHeight?: number;
   newWidth?: number;

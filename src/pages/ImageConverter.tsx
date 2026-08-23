@@ -1,4 +1,4 @@
-import { useState, ChangeEvent } from "react";
+import { useState, useRef, useEffect, ChangeEvent } from "react";
 
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
@@ -28,6 +28,22 @@ import { createImageProcessingQueue } from "@/services/queueService";
 
 export default function ImageConverter() {
   const [files, setFiles] = useState<ImageFile[]>([]);
+
+  const filesRef = useRef(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((file) => {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      });
+    };
+  }, []);
   const [format, setFormat] = useState<ConversionFormat>("png");
   const [quality, setQuality] = useState(80);
   const [resizeOptions, setResizeOptions] = useState<ResizeOptions>({ width: 0, height: 0 });
@@ -51,7 +67,16 @@ export default function ImageConverter() {
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFiles((prev) => {
+      const file = prev[index];
+      if (file) {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -88,9 +113,14 @@ export default function ImageConverter() {
 
     const { width: newWidth, height: newHeight } = await getImageSize(processedBlob);
 
+    if (imageFile.processedPreview) {
+      URL.revokeObjectURL(imageFile.processedPreview);
+    }
+
     return {
       ...imageFile,
       processed: processedBlob,
+      processedPreview: URL.createObjectURL(processedBlob),
       newWidth,
       newHeight,
       isProcessing: false,
@@ -168,14 +198,20 @@ export default function ImageConverter() {
 
   const resetAllFiles = () => {
     setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-      }))
+      prevFiles.map((file) => {
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+        return {
+          ...file,
+          processed: undefined,
+          processedPreview: undefined,
+          isProcessing: false,
+          isError: false,
+          newWidth: undefined,
+          newHeight: undefined,
+        };
+      })
     );
   };
 
@@ -348,7 +384,7 @@ export default function ImageConverter() {
             isOpen={true}
             onClose={() => setSelectedFileIndex(null)}
             originalSrc={files[selectedFileIndex].preview}
-            processedSrc={URL.createObjectURL(files[selectedFileIndex].processed)}
+            processedSrc={files[selectedFileIndex].processedPreview ?? ""}
             originalWidth={files[selectedFileIndex].originalWidth ?? 0}
             originalHeight={files[selectedFileIndex].originalHeight ?? 0}
             newWidth={files[selectedFileIndex].newWidth ?? 0}

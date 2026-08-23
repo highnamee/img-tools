@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImageMetadataModal } from "@/components/ImageMetadataModal";
@@ -18,6 +18,22 @@ interface ImageWithMetadata extends ImageFile {
 
 export default function ImageMetadataRemover() {
   const [files, setFiles] = useState<ImageWithMetadata[]>([]);
+
+  const filesRef = useRef(files);
+  useEffect(() => {
+    filesRef.current = files;
+  }, [files]);
+
+  useEffect(() => {
+    return () => {
+      filesRef.current.forEach((file) => {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      });
+    };
+  }, []);
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
   const [processingStatus, setProcessingStatus] = useState<{
     waiting: number;
@@ -43,7 +59,16 @@ export default function ImageMetadataRemover() {
   };
 
   const handleRemoveFile = (index: number) => {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
+    setFiles((prev) => {
+      const file = prev[index];
+      if (file) {
+        URL.revokeObjectURL(file.preview);
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+      }
+      return prev.filter((_, i) => i !== index);
+    });
   };
 
   const handleShowAllMetadata = (index: number) => {
@@ -67,9 +92,14 @@ export default function ImageMetadataRemover() {
 
     const processedBlob = await removeMetadata(file.file);
 
+    if (file.processedPreview) {
+      URL.revokeObjectURL(file.processedPreview);
+    }
+
     return {
       ...file,
       processed: processedBlob,
+      processedPreview: URL.createObjectURL(processedBlob),
       isProcessing: false,
       isError: false,
     };
@@ -144,16 +174,22 @@ export default function ImageMetadataRemover() {
 
   const resetAllFiles = () => {
     setFiles((prevFiles) =>
-      prevFiles.map((file) => ({
-        ...file,
-        processed: undefined,
-        isProcessing: false,
-        isError: false,
-        newWidth: undefined,
-        newHeight: undefined,
-        metadata: undefined,
-        coordinates: undefined,
-      }))
+      prevFiles.map((file) => {
+        if (file.processedPreview) {
+          URL.revokeObjectURL(file.processedPreview);
+        }
+        return {
+          ...file,
+          processed: undefined,
+          processedPreview: undefined,
+          isProcessing: false,
+          isError: false,
+          newWidth: undefined,
+          newHeight: undefined,
+          metadata: undefined,
+          coordinates: undefined,
+        };
+      })
     );
   };
 
