@@ -3,14 +3,17 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import {
   ChevronsLeftRight,
   Columns2,
+  Maximize2,
+  RotateCcw,
+  SlidersHorizontal,
   SplitSquareVertical,
-  ZoomIn,
 } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Input } from "@/components/ui/input";
+import { Slider } from "@/components/ui/slider";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/utils/css";
 import { formatDimensions } from "@/utils/formatUtils";
@@ -39,20 +42,26 @@ export function ImageDiffModal({
   const [viewMode, setViewMode] = useState<"slider" | "side-by-side">("slider");
   const [sliderPosition, setSliderPosition] = useState(50);
   const [isDragging, setIsDragging] = useState(false);
-  const [zoomLevel, setZoomLevel] = useState<number>(100);
+
+  // Aspect ratio based on original image
+  const aspectRatio = originalWidth > 0 && originalHeight > 0 ? originalWidth / originalHeight : 1;
+
+  // Default display width (capped at 650px or original width, min 100px)
+  const defaultWidth = Math.min(Math.max(300, originalWidth || 600), 750);
+  const [displayWidth, setDisplayWidth] = useState<number>(defaultWidth);
+
+  // Live calculated height maintaining aspect ratio
+  const displayHeight = Math.round(displayWidth / aspectRatio);
 
   const containerRef = useRef<HTMLDivElement | null>(null);
 
-  const handlePointerMove = useCallback(
-    (clientX: number) => {
-      if (!containerRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = clientX - rect.left;
-      const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
-      setSliderPosition(percentage);
-    },
-    []
-  );
+  const handlePointerMove = useCallback((clientX: number) => {
+    if (!containerRef.current) return;
+    const rect = containerRef.current.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const percentage = Math.max(0, Math.min(100, (x / rect.width) * 100));
+    setSliderPosition(percentage);
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
     setIsDragging(true);
@@ -98,17 +107,22 @@ export function ImageDiffModal({
     };
   }, [isDragging, handlePointerMove]);
 
+  const handleWidthChange = (val: number) => {
+    const clamped = Math.max(100, Math.min(2500, val));
+    setDisplayWidth(clamped);
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="flex max-h-[95vh] w-[95vw] sm:max-w-[1300px] flex-col p-4 sm:p-6 overflow-hidden">
-        <DialogHeader className="flex flex-row items-center justify-between gap-4 pb-2 border-b pr-8">
+      <DialogContent className="flex max-h-[92vh] w-[95vw] sm:max-w-[1300px] flex-col p-4 sm:p-6 overflow-hidden">
+        <DialogHeader className="flex flex-row items-center justify-between gap-4 pb-3 border-b pr-8">
           <div>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               Image Comparison
             </DialogTitle>
             <p className="text-muted-foreground text-xs mt-1">
-              Compare original ({formatDimensions(originalWidth, originalHeight)}) vs processed (
-              {formatDimensions(newWidth || originalWidth, newHeight || originalHeight)})
+              Original: {formatDimensions(originalWidth, originalHeight)} • Processed:{" "}
+              {formatDimensions(newWidth || originalWidth, newHeight || originalHeight)}
             </p>
           </div>
 
@@ -132,31 +146,79 @@ export function ImageDiffModal({
           </div>
         </DialogHeader>
 
-        {/* Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-2 py-1 text-xs">
-          <div className="flex items-center gap-2">
-            <span className="text-muted-foreground flex items-center gap-1 font-medium">
-              <ZoomIn className="h-3.5 w-3.5" /> Zoom:
+        {/* Dimension & Display Controls Toolbar */}
+        <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-xs border-b bg-muted/20 px-3 rounded-lg">
+          <div className="flex items-center flex-wrap gap-2">
+            <span className="text-muted-foreground font-medium flex items-center gap-1">
+              <SlidersHorizontal className="h-3.5 w-3.5" /> Size:
             </span>
-            {[25, 50, 75, 100, 150].map((level) => (
+
+            {/* Quick preset buttons */}
+            {[300, 500, 750, 1000].map((preset) => (
               <Button
-                key={level}
-                variant={zoomLevel === level ? "default" : "outline"}
+                key={preset}
+                variant={displayWidth === preset ? "default" : "outline"}
                 size="sm"
                 className="h-6 px-2 text-[11px]"
-                onClick={() => setZoomLevel(level)}
+                onClick={() => handleWidthChange(preset)}
               >
-                {level}%
+                {preset}px
               </Button>
             ))}
-            <span className="text-muted-foreground ml-2 text-[11px]">
-              Display: {Math.round((originalWidth * zoomLevel) / 100)}×{Math.round((originalHeight * zoomLevel) / 100)}px
-            </span>
+
+            {originalWidth > 0 && (
+              <Button
+                variant={displayWidth === originalWidth ? "default" : "outline"}
+                size="sm"
+                className="h-6 px-2 text-[11px] gap-1"
+                onClick={() => handleWidthChange(originalWidth)}
+              >
+                <Maximize2 className="h-3 w-3" />
+                Original ({originalWidth}px)
+              </Button>
+            )}
+
+            {/* Custom Width Input & Slider */}
+            <div className="flex items-center gap-2 pl-2 border-l border-border">
+              <div className="flex items-center gap-1">
+                <Input
+                  type="number"
+                  min={100}
+                  max={2500}
+                  step={10}
+                  value={displayWidth}
+                  onChange={(e) => handleWidthChange(Number(e.target.value))}
+                  className="h-6 w-20 px-1.5 py-0 text-xs font-mono text-center"
+                />
+                <span className="text-muted-foreground text-[11px]">× {displayHeight}px</span>
+              </div>
+
+              <div className="w-24 hidden sm:block">
+                <Slider
+                  value={[displayWidth]}
+                  min={100}
+                  max={1500}
+                  step={10}
+                  onValueChange={([val]) => handleWidthChange(val)}
+                  className="w-full"
+                />
+              </div>
+
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-6 px-1.5 text-muted-foreground hover:text-foreground"
+                title="Reset to default"
+                onClick={() => handleWidthChange(defaultWidth)}
+              >
+                <RotateCcw className="h-3 w-3" />
+              </Button>
+            </div>
           </div>
 
           {viewMode === "slider" && (
             <div className="text-muted-foreground text-[11px] flex items-center gap-2">
-              <span>Drag slider or click anywhere on image</span>
+              <span>Swipe/click to compare</span>
               <Badge variant="outline" className="text-[10px] font-mono">
                 {Math.round(sliderPosition)}%
               </Badge>
@@ -164,21 +226,19 @@ export function ImageDiffModal({
           )}
         </div>
 
-        {/* Main View Area */}
-        <div className="relative flex-1 min-h-[400px] max-h-[70vh] rounded-lg border border-border/80 bg-muted/20 overflow-hidden flex items-center justify-center">
+        {/* Scrollable Viewport with full X and Y scrolling */}
+        <div className="relative flex-1 h-[60vh] max-h-[65vh] w-full rounded-lg border border-border/80 bg-muted/10 overflow-auto">
           {viewMode === "slider" ? (
-            <div className="relative h-full w-full overflow-auto flex items-center justify-center p-4">
+            <div className="min-w-full min-h-full flex items-center justify-center p-6">
               <div
                 ref={containerRef}
                 className={cn(
-                  "relative select-none overflow-hidden rounded-md shadow-md border border-border/60 cursor-ew-resize",
+                  "relative select-none overflow-hidden rounded-md shadow-md border border-border/60 cursor-ew-resize shrink-0",
                   "bg-[linear-gradient(45deg,#0000000a_25%,transparent_25%),linear-gradient(-45deg,#0000000a_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#0000000a_75%),linear-gradient(-45deg,transparent_75%,#0000000a_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0px] dark:bg-[linear-gradient(45deg,#ffffff0f_25%,transparent_25%),linear-gradient(-45deg,#ffffff0f_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#ffffff0f_75%),linear-gradient(-45deg,transparent_75%,#ffffff0f_75%)]"
                 )}
                 style={{
-                  width: `${(originalWidth * zoomLevel) / 100}px`,
-                  maxWidth: "100%",
-                  maxHeight: "100%",
-                  aspectRatio: `${originalWidth} / ${originalHeight}`,
+                  width: `${displayWidth}px`,
+                  height: `${displayHeight}px`,
                 }}
                 onMouseDown={handleMouseDown}
                 onTouchStart={handleTouchStart}
@@ -187,7 +247,7 @@ export function ImageDiffModal({
                 <img
                   src={processedSrc}
                   alt="Processed"
-                  className="absolute inset-0 h-full w-full object-contain pointer-events-none"
+                  className="absolute inset-0 h-full w-full object-fill pointer-events-none"
                   draggable={false}
                 />
 
@@ -201,12 +261,10 @@ export function ImageDiffModal({
                   <img
                     src={originalSrc}
                     alt="Original"
-                    className="absolute top-0 left-0 h-full max-w-none object-contain pointer-events-none"
+                    className="absolute top-0 left-0 h-full max-w-none object-fill pointer-events-none"
                     style={{
-                      width: containerRef.current
-                        ? `${containerRef.current.clientWidth}px`
-                        : "100%",
-                      height: "100%",
+                      width: `${displayWidth}px`,
+                      height: `${displayHeight}px`,
                     }}
                     draggable={false}
                   />
@@ -237,71 +295,63 @@ export function ImageDiffModal({
               </div>
             </div>
           ) : (
-            <ScrollArea className="h-full w-full p-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6 min-h-full">
+            <div className="min-w-full min-h-full p-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start justify-center">
                 {/* Original side */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex w-full items-center justify-between px-1">
                     <h3 className="font-semibold text-sm">Original</h3>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="text-[10px]">
-                        {formatDimensions(originalWidth, originalHeight)}
-                      </Badge>
-                      <span className="text-muted-foreground text-[10px]">
-                        ({Math.round((originalWidth * zoomLevel) / 100)}×{Math.round((originalHeight * zoomLevel) / 100)}px)
-                      </span>
-                    </div>
+                    <Badge variant="outline" className="text-[10px]">
+                      {formatDimensions(originalWidth, originalHeight)}
+                    </Badge>
                   </div>
                   <div
                     className={cn(
-                      "relative overflow-auto rounded-lg border border-border/80 p-2 flex items-center justify-center min-h-[300px]",
+                      "relative overflow-hidden rounded-lg border border-border/80 flex items-center justify-center shrink-0 shadow-xs",
                       "bg-[linear-gradient(45deg,#0000000a_25%,transparent_25%),linear-gradient(-45deg,#0000000a_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#0000000a_75%),linear-gradient(-45deg,transparent_75%,#0000000a_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0px] dark:bg-[linear-gradient(45deg,#ffffff0f_25%,transparent_25%),linear-gradient(-45deg,#ffffff0f_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#ffffff0f_75%),linear-gradient(-45deg,transparent_75%,#ffffff0f_75%)]"
                     )}
+                    style={{
+                      width: `${displayWidth}px`,
+                      height: `${displayHeight}px`,
+                      maxWidth: "100%",
+                    }}
                   >
                     <img
                       src={originalSrc}
                       alt="Original"
-                      style={{
-                        width: `${(originalWidth * zoomLevel) / 100}px`,
-                        maxWidth: "100%",
-                      }}
-                      className="rounded object-contain"
+                      className="h-full w-full object-fill rounded"
                     />
                   </div>
                 </div>
 
                 {/* Processed side */}
-                <div className="flex flex-col gap-2">
-                  <div className="flex items-center justify-between">
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex w-full items-center justify-between px-1">
                     <h3 className="font-semibold text-sm">Processed</h3>
-                    <div className="flex items-center gap-1.5">
-                      <Badge variant="outline" className="text-[10px]">
-                        {formatDimensions(newWidth || originalWidth, newHeight || originalHeight)}
-                      </Badge>
-                      <span className="text-muted-foreground text-[10px]">
-                        ({Math.round(((newWidth || originalWidth) * zoomLevel) / 100)}×{Math.round(((newHeight || originalHeight) * zoomLevel) / 100)}px)
-                      </span>
-                    </div>
+                    <Badge variant="outline" className="text-[10px]">
+                      {formatDimensions(newWidth || originalWidth, newHeight || originalHeight)}
+                    </Badge>
                   </div>
                   <div
                     className={cn(
-                      "relative overflow-auto rounded-lg border border-border/80 p-2 flex items-center justify-center min-h-[300px]",
+                      "relative overflow-hidden rounded-lg border border-border/80 flex items-center justify-center shrink-0 shadow-xs",
                       "bg-[linear-gradient(45deg,#0000000a_25%,transparent_25%),linear-gradient(-45deg,#0000000a_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#0000000a_75%),linear-gradient(-45deg,transparent_75%,#0000000a_75%)] bg-[size:16px_16px] bg-[position:0_0,0_8px,8px_-8px,-8px_0px] dark:bg-[linear-gradient(45deg,#ffffff0f_25%,transparent_25%),linear-gradient(-45deg,#ffffff0f_25%,transparent_25%),linear-gradient(45deg,transparent_75%,#ffffff0f_75%),linear-gradient(-45deg,transparent_75%,#ffffff0f_75%)]"
                     )}
+                    style={{
+                      width: `${displayWidth}px`,
+                      height: `${displayHeight}px`,
+                      maxWidth: "100%",
+                    }}
                   >
                     <img
                       src={processedSrc}
                       alt="Processed"
-                      style={{
-                        width: `${((newWidth || originalWidth) * zoomLevel) / 100}px`,
-                        maxWidth: "100%",
-                      }}
-                      className="rounded object-contain"
+                      className="h-full w-full object-fill rounded"
                     />
                   </div>
                 </div>
               </div>
-            </ScrollArea>
+            </div>
           )}
         </div>
       </DialogContent>
