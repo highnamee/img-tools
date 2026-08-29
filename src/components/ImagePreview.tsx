@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { ImageFile, ConversionFormat, downloadImage } from "@/services/imageService";
 import { cn } from "@/utils/css";
-import { formatFileSize, formatDimensions } from "@/utils/formatUtils";
+import { formatFileSize, formatDimensions, calculateSavings } from "@/utils/formatUtils";
 
 interface ImagePreviewProps {
   readonly file: ImageFile;
@@ -35,6 +35,8 @@ export function ImagePreview({
       downloadImage(file.processed, file.name, format);
     }
   };
+
+  const savings = file.processed ? calculateSavings(file.file.size, file.processed.size) : null;
 
   let badgeColor = "bg-gray-500";
   let badgeText = "Ready";
@@ -81,13 +83,36 @@ export function ImagePreview({
         <p className="truncate text-sm font-medium">
           {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
         </p>
-        <Badge className={cn(badgeColor, "rounded-sm")}>{badgeText}</Badge>
+        <div className="flex flex-wrap items-center gap-1.5">
+          <Badge className={cn(badgeColor, "rounded-sm")}>{badgeText}</Badge>
+          {savings && savings.percent > 0 && (
+            <Badge
+              variant={savings.isSaved ? "default" : "outline"}
+              className={cn(
+                "rounded-sm text-[10px] font-semibold px-1.5 py-0.5",
+                savings.isSaved
+                  ? "bg-emerald-600 dark:bg-emerald-500 text-white"
+                  : "text-amber-600 dark:text-amber-400 border-amber-500/40"
+              )}
+            >
+              {savings.text}
+            </Badge>
+          )}
+        </div>
         <div className="text-muted-foreground text-xs flex flex-wrap items-center gap-x-2 gap-y-1">
           {showSizeInfo && (
-            <span>
-              {file.processed
-                ? `${formatFileSize(file.file.size)} → ${formatFileSize(file.processed.size)}`
-                : formatFileSize(file.file.size)}
+            <span className="flex items-center gap-1">
+              {file.processed ? (
+                <>
+                  <span className="line-through opacity-70">{formatFileSize(file.file.size)}</span>
+                  <span>→</span>
+                  <span className="font-semibold text-foreground">
+                    {formatFileSize(file.processed.size)}
+                  </span>
+                </>
+              ) : (
+                formatFileSize(file.file.size)
+              )}
             </span>
           )}
           {showSizeInfo && showDimensionsInfo && file.originalWidth && file.originalHeight && (
