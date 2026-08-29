@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { Download, RotateCcw, ScanSearch, Trash2 } from "lucide-react";
 
+import { FilenameOptionsControl } from "@/components/FilenameOptionsControl";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImageMetadataModal } from "@/components/ImageMetadataModal";
 import { ImagePreview } from "@/components/ImagePreview";
@@ -12,6 +13,7 @@ import { useImageQueue } from "@/hooks/useImageQueue";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile } from "@/services/imageService";
 import { MetadataField, extractMetadata, removeMetadata } from "@/services/metadataService";
+import { formatOutputFilename } from "@/utils/formatUtils";
 import { extractImageFormat } from "@/utils/imageUtils";
 
 interface ImageWithMetadata extends ImageFile {
@@ -31,6 +33,8 @@ export default function ImageMetadataRemover() {
     handleProgress,
   } = useImageQueue<ImageWithMetadata>(2);
 
+  const [prefix, setPrefix] = useState("");
+  const [suffix, setSuffix] = useState("-clean");
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
   const handleFilesAdded = async (newFiles: ImageFile[]) => {
@@ -102,8 +106,14 @@ export default function ImageMetadataRemover() {
   const downloadAll = () => {
     const filesToDownload = files
       .filter((file) => file.processed)
-      .map((file) => ({ blob: file.processed!, filename: file.name }));
-    downloadAllFiles(filesToDownload);
+      .map((file) => {
+        const format = extractImageFormat(file.name);
+        return {
+          blob: file.processed!,
+          filename: formatOutputFilename(file.name, format, { prefix, suffix }),
+        };
+      });
+    downloadAllFiles(filesToDownload, "clean-metadata-images.zip");
   };
 
   const openInGoogleMaps = (coordinates: { lat: number; lng: number }) => {
@@ -144,6 +154,23 @@ export default function ImageMetadataRemover() {
 
           <hr className="border-border/60" />
 
+          <div className="space-y-4">
+            <p className="text-muted-foreground text-xs font-semibold uppercase tracking-wider">
+              Settings
+            </p>
+
+            <FilenameOptionsControl
+              prefix={prefix}
+              onPrefixChange={setPrefix}
+              suffix={suffix}
+              onSuffixChange={setSuffix}
+              exampleName={files[0]?.name || "photo.jpg"}
+              format={files[0] ? extractImageFormat(files[0].name) : "jpg"}
+            />
+          </div>
+
+          <hr className="border-border/60" />
+
           <div className="space-y-2">
             <Tooltip>
               <TooltipTrigger asChild>
@@ -170,7 +197,7 @@ export default function ImageMetadataRemover() {
                   className="w-full"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download All
+                  Download All (ZIP)
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">Download all processed images as a ZIP</TooltipContent>
@@ -225,53 +252,57 @@ export default function ImageMetadataRemover() {
 
       {files.length > 0 && (
         <div className="grid gap-4" style={{ gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))" }}>
-          {files.map((file, fileIndex) => (
-            <ImagePreview
-              key={file.name + file.preview}
-              file={file}
-              format={extractImageFormat(file.name)}
-              onRemove={() => handleRemoveFile(fileIndex)}
-              onPreview={
-                file.metadata && file.metadata.length > 0
-                  ? () => setSelectedFileIndex(fileIndex)
-                  : undefined
-              }
-              extraData={
-                file.metadata && file.metadata.length > 0 ? (
-                  <div className="space-y-1">
-                    {file.metadata.slice(0, 5).map((field) => (
-                      <div key={field.name} className="flex items-center gap-2 text-xs">
-                        <span className="min-w-1/4 font-medium">{field.name}</span>
-                        <span className="text-muted-foreground ml-2 truncate">{field.value}</span>
+          {files.map((file, fileIndex) => {
+            const fileFormat = extractImageFormat(file.name);
+            return (
+              <ImagePreview
+                key={file.name + file.preview}
+                file={file}
+                format={fileFormat}
+                customFilename={formatOutputFilename(file.name, fileFormat, { prefix, suffix })}
+                onRemove={() => handleRemoveFile(fileIndex)}
+                onPreview={
+                  file.metadata && file.metadata.length > 0
+                    ? () => setSelectedFileIndex(fileIndex)
+                    : undefined
+                }
+                extraData={
+                  file.metadata && file.metadata.length > 0 ? (
+                    <div className="space-y-1">
+                      {file.metadata.slice(0, 5).map((field) => (
+                        <div key={field.name} className="flex items-center gap-2 text-xs">
+                          <span className="min-w-1/4 font-medium">{field.name}</span>
+                          <span className="text-muted-foreground ml-2 truncate">{field.value}</span>
+                        </div>
+                      ))}
+                      <div className="flex gap-2 pt-2">
+                        {file.coordinates && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => openInGoogleMaps(file.coordinates!)}
+                          >
+                            View on Map 🗺️
+                          </Button>
+                        )}
+                        {file.metadata.length > 5 && (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="w-full text-xs"
+                            onClick={() => setSelectedFileIndex(fileIndex)}
+                          >
+                            Show all ({file.metadata.length})
+                          </Button>
+                        )}
                       </div>
-                    ))}
-                    <div className="flex gap-2 pt-2">
-                      {file.coordinates && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs"
-                          onClick={() => openInGoogleMaps(file.coordinates!)}
-                        >
-                          View on Map 🗺️
-                        </Button>
-                      )}
-                      {file.metadata.length > 5 && (
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="w-full text-xs"
-                          onClick={() => setSelectedFileIndex(fileIndex)}
-                        >
-                          Show all ({file.metadata.length})
-                        </Button>
-                      )}
                     </div>
-                  </div>
-                ) : undefined
-              }
-            />
-          ))}
+                  ) : undefined
+                }
+              />
+            );
+          })}
         </div>
       )}
 

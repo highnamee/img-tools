@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 
 import { Download, Eraser, RotateCcw, Trash2 } from "lucide-react";
 
+import { FilenameOptionsControl } from "@/components/FilenameOptionsControl";
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
@@ -21,6 +22,7 @@ import { useImageQueue } from "@/hooks/useImageQueue";
 import { useResizeControl } from "@/hooks/useResizeControl";
 import { downloadAllFiles } from "@/services/fileService";
 import { ImageFile, convertImage, getImageSize } from "@/services/imageService";
+import { formatOutputFilename } from "@/utils/formatUtils";
 
 export default function BackgroundRemover() {
   const {
@@ -35,6 +37,8 @@ export default function BackgroundRemover() {
     handleProgress,
   } = useImageQueue<ImageFile>(1);
   const [quality, setQuality] = useState<number>(80);
+  const [prefix, setPrefix] = useState("");
+  const [suffix, setSuffix] = useState("-no-bg");
   const [modelVariant, setModelVariant] = useState<"isnet_fp16" | "isnet" | "isnet_quint8">("isnet_fp16");
   const resize = useResizeControl();
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
@@ -152,8 +156,11 @@ export default function BackgroundRemover() {
   const downloadAll = () => {
     const filesToDownload = files
       .filter((file) => file.processed)
-      .map((file) => ({ blob: file.processed!, filename: `${file.name.split(".")[0]}-no-bg.png` }));
-    downloadAllFiles(filesToDownload);
+      .map((file) => ({
+        blob: file.processed!,
+        filename: formatOutputFilename(file.name, "png", { prefix, suffix }),
+      }));
+    downloadAllFiles(filesToDownload, "background-removed-images.zip");
   };
 
   const resetAllFiles = () => {
@@ -240,6 +247,15 @@ export default function BackgroundRemover() {
               value={resize.options}
               onChange={resize.setOptions}
             />
+
+            <FilenameOptionsControl
+              prefix={prefix}
+              onPrefixChange={setPrefix}
+              suffix={suffix}
+              onSuffixChange={setSuffix}
+              exampleName={files[0]?.name || "photo"}
+              format="png"
+            />
           </div>
 
           <hr className="border-border/60" />
@@ -270,7 +286,7 @@ export default function BackgroundRemover() {
                   className="w-full"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download All
+                  Download All (ZIP)
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">Download all processed images as a ZIP</TooltipContent>
@@ -330,6 +346,7 @@ export default function BackgroundRemover() {
               key={file.name + file.preview}
               file={file}
               format="png"
+              customFilename={formatOutputFilename(file.name, "png", { prefix, suffix })}
               onRemove={() => handleRemoveFile(fileIndex)}
               onPreview={file.processed ? () => setSelectedFileIndex(fileIndex) : undefined}
               extraData={

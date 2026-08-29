@@ -35,3 +35,16 @@ export function calculateSavings(
   }
   return { percent: 0, text: "0%", isSaved: false };
 }
+
+export function formatOutputFilename(
+  originalName: string,
+  extension: string,
+  options?: { prefix?: string; suffix?: string }
+): string {
+  const dotIndex = originalName.lastIndexOf(".");
+  const base = dotIndex > 0 ? originalName.substring(0, dotIndex) : originalName;
+  const prefix = options?.prefix || "";
+  const suffix = options?.suffix || "";
+  const ext = extension.startsWith(".") ? extension.slice(1) : extension;
+  return `${prefix}${base}${suffix}.${ext}`;
+}

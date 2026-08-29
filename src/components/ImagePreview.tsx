@@ -12,6 +12,7 @@ import { formatFileSize, formatDimensions, calculateSavings } from "@/utils/form
 interface ImagePreviewProps {
   readonly file: ImageFile;
   readonly format: ConversionFormat;
+  readonly customFilename?: string;
   readonly onRemove: () => void;
   readonly onPreview?: () => void;
   readonly extraData?: ReactNode;
@@ -23,6 +24,7 @@ interface ImagePreviewProps {
 export function ImagePreview({
   file,
   format,
+  customFilename,
   onRemove,
   onPreview,
   extraData,
@@ -32,7 +34,8 @@ export function ImagePreview({
 }: Readonly<ImagePreviewProps>) {
   const handleDownload = () => {
     if (file.processed) {
-      downloadImage(file.processed, file.name, format);
+      const filename = customFilename || file.name;
+      downloadImage(file.processed, filename, format);
     }
   };
 
@@ -81,7 +84,9 @@ export function ImagePreview({
       </div>
       <div className="space-y-2 p-2">
         <p className="truncate text-sm font-medium">
-          {file.processed ? `${file.name.split(".")[0]}.${format}` : file.name}
+          {file.processed
+            ? customFilename || `${file.name.split(".")[0]}.${format}`
+            : file.name}
         </p>
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge className={cn(badgeColor, "rounded-sm")}>{badgeText}</Badge>

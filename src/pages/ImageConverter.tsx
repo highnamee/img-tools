@@ -7,6 +7,7 @@ import {
   Trash2,
 } from "lucide-react";
 
+import { FilenameOptionsControl } from "@/components/FilenameOptionsControl";
 import { ImageDiffModal } from "@/components/ImageDiffModal";
 import { ImageDropZone } from "@/components/ImageDropZone";
 import { ImagePreview } from "@/components/ImagePreview";
@@ -32,6 +33,7 @@ import {
   formatRecommendations,
   getImageSize,
 } from "@/services/imageService";
+import { formatOutputFilename } from "@/utils/formatUtils";
 
 export default function ImageConverter() {
   const {
@@ -48,6 +50,8 @@ export default function ImageConverter() {
   } = useImageQueue<ImageFile>(2);
   const [format, setFormat] = useState<ConversionFormat>("jpeg");
   const [quality, setQuality] = useState(85);
+  const [prefix, setPrefix] = useState("");
+  const [suffix, setSuffix] = useState("");
   const resize = useResizeControl();
   const [selectedFileIndex, setSelectedFileIndex] = useState<number | null>(null);
 
@@ -122,8 +126,9 @@ export default function ImageConverter() {
       downloadAllFiles(
         filesToDownload.map((file) => ({
           blob: file.processed!,
-          filename: `${file.name.split(".")[0]}.${format}`,
-        }))
+          filename: formatOutputFilename(file.name, format, { prefix, suffix }),
+        })),
+        "converted-images.zip"
       );
     }
   };
@@ -211,6 +216,15 @@ export default function ImageConverter() {
               value={resize.options}
               onChange={resize.setOptions}
             />
+
+            <FilenameOptionsControl
+              prefix={prefix}
+              onPrefixChange={setPrefix}
+              suffix={suffix}
+              onSuffixChange={setSuffix}
+              exampleName={files[0]?.name || "image"}
+              format={format}
+            />
           </div>
 
           <hr className="border-border/60" />
@@ -241,7 +255,7 @@ export default function ImageConverter() {
                   className="w-full"
                 >
                   <Download className="mr-2 h-4 w-4" />
-                  Download All
+                  Download All (ZIP)
                 </Button>
               </TooltipTrigger>
               <TooltipContent side="right">Download all successfully converted images as a ZIP</TooltipContent>
@@ -301,6 +315,7 @@ export default function ImageConverter() {
               key={file.name + file.preview}
               file={file}
               format={format}
+              customFilename={formatOutputFilename(file.name, format, { prefix, suffix })}
               onRemove={() => handleRemoveFile(fileIndex)}
               onPreview={file.processed ? () => setSelectedFileIndex(fileIndex) : undefined}
               extraData={
