@@ -114,8 +114,8 @@ export function ImageDiffModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="flex max-h-[92vh] w-[95vw] sm:max-w-[1300px] flex-col p-4 sm:p-6 overflow-hidden">
-        <DialogHeader className="flex flex-row items-center justify-between gap-4 pb-3 border-b pr-8">
+      <DialogContent className="flex h-[88vh] max-h-[88vh] w-[95vw] sm:max-w-[1300px] flex-col p-4 sm:p-6 overflow-hidden">
+        <DialogHeader className="flex flex-row items-center justify-between gap-4 pb-3 border-b pr-8 shrink-0">
           <div>
             <DialogTitle className="text-xl font-bold flex items-center gap-2">
               Image Comparison
@@ -147,7 +147,7 @@ export function ImageDiffModal({
         </DialogHeader>
 
         {/* Dimension & Display Controls Toolbar */}
-        <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-xs border-b bg-muted/20 px-3 rounded-lg">
+        <div className="flex flex-wrap items-center justify-between gap-3 py-2 text-xs border-b bg-muted/20 px-3 rounded-lg shrink-0">
           <div className="flex items-center flex-wrap gap-2">
             <span className="text-muted-foreground font-medium flex items-center gap-1">
               <SlidersHorizontal className="h-3.5 w-3.5" /> Size:
@@ -227,7 +227,7 @@ export function ImageDiffModal({
         </div>
 
         {/* Scrollable Viewport with full X and Y scrolling */}
-        <div className="relative flex-1 h-[60vh] max-h-[65vh] w-full rounded-lg border border-border/80 bg-muted/10 overflow-auto">
+        <div className="relative flex-1 min-h-0 w-full rounded-lg border border-border/80 bg-muted/10 overflow-auto">
           {viewMode === "slider" ? (
             <div className="min-w-full min-h-full flex items-center justify-center p-6">
               <div
