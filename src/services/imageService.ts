@@ -12,7 +12,7 @@ export interface ImageFile {
   isError?: boolean;
 }
 
-export type ConversionFormat = "png" | "jpeg" | "webp" | "bmp" | "tiff";
+export type ConversionFormat = "png" | "jpeg" | "webp" | "avif";
 
 export type ResizeOptions = {
   width: number;
@@ -26,8 +26,7 @@ export const formatRecommendations: Record<
   jpeg: { defaultQuality: 85, description: "Best for photos and complex images" },
   png: { defaultQuality: 80, description: "Good for images with transparency" },
   webp: { defaultQuality: 80, description: "Modern format with good compression" },
-  bmp: { defaultQuality: 100, description: "Uncompressed format, not recommended" },
-  tiff: { defaultQuality: 100, description: "High quality, large file size" },
+  avif: { defaultQuality: 75, description: "Next-gen format with superior compression" },
 };
 
 export const createImageFile = (file: File): ImageFile => ({
@@ -95,7 +94,8 @@ const canvasConvert = async (
 
       ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
 
-      const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
+      const mimeType =
+        format === "jpeg" ? "image/jpeg" : format === "avif" ? "image/avif" : `image/${format}`;
 
       canvas.toBlob(
         (blob) => {
@@ -125,16 +125,13 @@ export const convertImage = async (
 ): Promise<Blob> => {
   const { file, originalWidth, originalHeight } = imageFile;
 
-  if (format === "bmp" || format === "tiff") {
-    return file;
-  }
-
   if (!originalWidth || !originalHeight) {
     console.error("Original dimensions not available, cannot resize properly");
     return file;
   }
 
-  const mimeType = format === "jpeg" ? "image/jpeg" : `image/${format}`;
+  const mimeType =
+    format === "jpeg" ? "image/jpeg" : format === "avif" ? "image/avif" : `image/${format}`;
 
   try {
     const canvasBlob = await canvasConvert(

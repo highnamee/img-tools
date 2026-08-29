@@ -177,8 +177,7 @@ export default function ImageConverter() {
                   <SelectItem value="jpeg">JPEG</SelectItem>
                   <SelectItem value="png">PNG</SelectItem>
                   <SelectItem value="webp">WebP</SelectItem>
-                  <SelectItem value="bmp">BMP</SelectItem>
-                  <SelectItem value="tiff">TIFF</SelectItem>
+                  <SelectItem value="avif">AVIF</SelectItem>
                 </SelectContent>
               </Select>
               <p className="text-muted-foreground text-xs">

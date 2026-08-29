@@ -11,7 +11,7 @@ export default function LandingPage() {
     {
       title: "Image Converter",
       features: [
-        "Seamlessly convert between formats: PNG, JPEG, WEBP, BMP, TIFF",
+        "Seamlessly convert between formats: PNG, JPEG, WEBP, AVIF",
         "Compress and resize your images",
         "Batch process multiple files without any limits",
       ],

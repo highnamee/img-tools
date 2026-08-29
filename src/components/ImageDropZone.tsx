@@ -26,17 +26,18 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
 
       const filesWithDimensions = await Promise.all(
         imageFiles.map(async (file) => {
-          // Get dimensions
+          // Get dimensions safely
           const img = new Image();
-          img.src = file.preview;
-          await new Promise((resolve) => {
-            img.onload = resolve;
+          await new Promise<void>((resolve) => {
+            img.onload = () => resolve();
+            img.onerror = () => resolve();
+            img.src = file.preview;
           });
 
           return {
             ...file,
-            originalWidth: img.width,
-            originalHeight: img.height,
+            originalWidth: img.width || undefined,
+            originalHeight: img.height || undefined,
           };
         })
       );
@@ -109,7 +110,7 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
         <p className="text-muted-foreground text-sm font-medium">
           Drag and drop images here, or click to select files
         </p>
-        <p className="text-muted-foreground text-xs">Supports PNG, JPEG, WebP, BMP, TIFF</p>
+        <p className="text-muted-foreground text-xs">Supports PNG, JPEG, WebP, AVIF</p>
       </label>
     </div>
   );
