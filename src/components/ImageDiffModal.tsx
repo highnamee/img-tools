@@ -295,10 +295,13 @@ export function ImageDiffModal({
               </div>
             </div>
           ) : (
-            <div className="min-w-full min-h-full p-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-8 items-start justify-center">
+            <div className="min-w-full min-h-full p-6 flex justify-center items-start">
+              <div className="flex flex-row gap-8 items-start justify-center shrink-0 w-fit">
                 {/* Original side */}
-                <div className="flex flex-col items-center gap-2">
+                <div
+                  className="flex flex-col items-center gap-2 shrink-0"
+                  style={{ width: `${displayWidth}px` }}
+                >
                   <div className="flex w-full items-center justify-between px-1">
                     <h3 className="font-semibold text-sm">Original</h3>
                     <Badge variant="outline" className="text-[10px]">
@@ -313,7 +316,6 @@ export function ImageDiffModal({
                     style={{
                       width: `${displayWidth}px`,
                       height: `${displayHeight}px`,
-                      maxWidth: "100%",
                     }}
                   >
                     <img
@@ -325,7 +327,10 @@ export function ImageDiffModal({
                 </div>
 
                 {/* Processed side */}
-                <div className="flex flex-col items-center gap-2">
+                <div
+                  className="flex flex-col items-center gap-2 shrink-0"
+                  style={{ width: `${displayWidth}px` }}
+                >
                   <div className="flex w-full items-center justify-between px-1">
                     <h3 className="font-semibold text-sm">Processed</h3>
                     <Badge variant="outline" className="text-[10px]">
@@ -340,7 +345,6 @@ export function ImageDiffModal({
                     style={{
                       width: `${displayWidth}px`,
                       height: `${displayHeight}px`,
-                      maxWidth: "100%",
                     }}
                   >
                     <img
