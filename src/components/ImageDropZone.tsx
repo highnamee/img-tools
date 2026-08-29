@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 
+import { useClipboardPaste } from "@/hooks/useClipboardPaste";
 import { ImageFile, createImageFile } from "@/services/imageService";
 import { cn } from "@/utils/css";
 
@@ -46,6 +47,11 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
     },
     [onFilesAdded]
   );
+
+  // Reusable clipboard paste hook
+  useClipboardPaste({
+    onImagesPasted: processAddedFiles,
+  });
 
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
@@ -107,8 +113,18 @@ export function ImageDropZone({ onFilesAdded }: Readonly<ImageDropZoneProps>) {
             <line x1="12" y1="3" x2="12" y2="15" />
           </svg>
         </div>
-        <p className="text-muted-foreground text-sm font-medium">
-          Drag and drop images here, or click to select files
+        <p className="text-muted-foreground text-sm font-medium flex items-center flex-wrap justify-center gap-1.5">
+          <span>Drag & drop images, paste</span>
+          <span className="inline-flex items-center gap-1">
+            <kbd className="bg-muted text-foreground/80 border-border rounded border px-1.5 py-0.5 text-[10px] font-semibold">
+              Ctrl+V
+            </kbd>
+            <span className="text-xs">/</span>
+            <kbd className="bg-muted text-foreground/80 border-border rounded border px-1.5 py-0.5 text-[10px] font-semibold">
+              ⌘V
+            </kbd>
+          </span>
+          <span>or click to browse</span>
         </p>
         <p className="text-muted-foreground text-xs">Supports PNG, JPEG, WebP, AVIF</p>
       </label>
