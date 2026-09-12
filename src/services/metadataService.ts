@@ -50,10 +50,12 @@ export async function extractMetadata(file: File): Promise<{
 export async function removeMetadata(file: File): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const img = new Image();
+    const objectUrl = URL.createObjectURL(file);
     img.onload = () => {
+      URL.revokeObjectURL(objectUrl);
       const canvas = document.createElement("canvas");
-      canvas.width = img.width;
-      canvas.height = img.height;
+      canvas.width = img.naturalWidth || img.width;
+      canvas.height = img.naturalHeight || img.height;
       const ctx = canvas.getContext("2d");
       if (!ctx) {
         reject(new Error("Could not get canvas context"));
@@ -69,8 +71,11 @@ export async function removeMetadata(file: File): Promise<Blob> {
         else reject(new Error("Could not create blob"));
       }, format);
     };
-    img.onerror = () => reject(new Error("Could not load image"));
-    img.src = URL.createObjectURL(file);
+    img.onerror = (err) => {
+      URL.revokeObjectURL(objectUrl);
+      reject(err);
+    };
+    img.src = objectUrl;
   });
 }
 

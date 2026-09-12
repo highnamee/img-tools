@@ -105,7 +105,7 @@ export default function ImageConverter() {
     setFiles((prevFiles) => prevFiles.map((file) => ({ ...file, isError: false })));
 
     files.forEach((imageFile, index) => {
-      if (imageFile.processed) return;
+      if (imageFile.isProcessing) return;
       queue.current!.enqueue({
         task: () => processImageFile(imageFile, index),
         onComplete: (result) => handleComplete(result, index),

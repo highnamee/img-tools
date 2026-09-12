@@ -19,11 +19,13 @@ interface ResizeControlProps {
  */
 export function ResizeControl({ enabled, onEnabledChange, value, onChange }: ResizeControlProps) {
   const handleWidthChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange({ height: 0, width: e.target.value ? parseInt(e.target.value) : 0 });
+    const val = parseInt(e.target.value, 10);
+    onChange({ height: 0, width: isNaN(val) || val <= 0 ? 0 : val });
   };
 
   const handleHeightChange = (e: ChangeEvent<HTMLInputElement>) => {
-    onChange({ height: e.target.value ? parseInt(e.target.value) : 0, width: 0 });
+    const val = parseInt(e.target.value, 10);
+    onChange({ height: isNaN(val) || val <= 0 ? 0 : val, width: 0 });
   };
 
   return (
@@ -37,6 +39,7 @@ export function ResizeControl({ enabled, onEnabledChange, value, onChange }: Res
           <div className="flex items-center gap-2">
             <Input
               type="number"
+              min={1}
               placeholder="Width px"
               value={value.width || ""}
               onChange={handleWidthChange}
@@ -46,6 +49,7 @@ export function ResizeControl({ enabled, onEnabledChange, value, onChange }: Res
             <span className="text-muted-foreground text-xs">or</span>
             <Input
               type="number"
+              min={1}
               placeholder="Height px"
               value={value.height || ""}
               onChange={handleHeightChange}

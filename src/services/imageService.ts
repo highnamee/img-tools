@@ -51,8 +51,8 @@ const canvasConvert = async (
     img.onload = () => {
       URL.revokeObjectURL(objectUrl);
 
-      let targetWidth = originalWidth || img.width;
-      let targetHeight = originalHeight || img.height;
+      let targetWidth = originalWidth || img.naturalWidth || img.width;
+      let targetHeight = originalHeight || img.naturalHeight || img.height;
 
       if (resizeOptions) {
         const { width, height } = resizeOptions;
@@ -70,8 +70,8 @@ const canvasConvert = async (
         }
       }
 
-      targetWidth = Math.round(targetWidth);
-      targetHeight = Math.round(targetHeight);
+      targetWidth = Math.max(1, Math.round(targetWidth));
+      targetHeight = Math.max(1, Math.round(targetHeight));
 
       const canvas = document.createElement("canvas");
       canvas.width = targetWidth;
@@ -125,14 +125,6 @@ export const convertImage = async (
 ): Promise<Blob> => {
   const { file, originalWidth, originalHeight } = imageFile;
 
-  if (!originalWidth || !originalHeight) {
-    console.error("Original dimensions not available, cannot resize properly");
-    return file;
-  }
-
-  const mimeType =
-    format === "jpeg" ? "image/jpeg" : format === "avif" ? "image/avif" : `image/${format}`;
-
   try {
     const canvasBlob = await canvasConvert(
       file,
@@ -142,12 +134,6 @@ export const convertImage = async (
       originalWidth,
       originalHeight
     );
-
-    const isSameFormat = file.type === mimeType;
-    if (isSameFormat && canvasBlob.size > file.size) {
-      console.warn(`Compression resulted in larger file size for ${file.name}, returning original`);
-      return file;
-    }
 
     return canvasBlob;
   } catch (err) {
@@ -170,10 +156,11 @@ export const getImageSize = async (file: Blob) => {
   const img = new Image();
   const objectUrl = URL.createObjectURL(file);
   img.src = objectUrl;
-  await new Promise((resolve) => {
-    img.onload = resolve;
+  await new Promise<void>((resolve) => {
+    img.onload = () => resolve();
+    img.onerror = () => resolve();
   });
 
   URL.revokeObjectURL(objectUrl);
-  return { width: img.width, height: img.height };
+  return { width: img.naturalWidth || img.width, height: img.naturalHeight || img.height };
 };
